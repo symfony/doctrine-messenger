@@ -162,7 +162,7 @@ class Connection implements ResetInterface
                 $query->getParameters(),
                 $query->getParameterTypes()
             );
-            $doctrineEnvelope = $stmt instanceof Result ? $stmt->fetchAssociative() : $stmt->fetch();
+            $doctrineEnvelope = $stmt->fetchAssociative();
 
             if (false === $doctrineEnvelope) {
                 $this->driverConnection->commit();
