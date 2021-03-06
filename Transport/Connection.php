@@ -121,7 +121,7 @@ class Connection implements ResetInterface
      */
     public function send(string $body, array $headers, int $delay = 0): string
     {
-        $now = new \DateTime();
+        $now = new \DateTimeImmutable();
         $availableAt = (clone $now)->modify(sprintf('+%d seconds', $delay / 1000));
 
         $queryBuilder = $this->driverConnection->createQueryBuilder()
@@ -144,8 +144,8 @@ class Connection implements ResetInterface
             null,
             null,
             null,
-            Types::DATETIME_MUTABLE,
-            Types::DATETIME_MUTABLE,
+            Types::DATETIME_IMMUTABLE,
+            Types::DATETIME_IMMUTABLE,
         ]);
 
         return $this->driverConnection->lastInsertId();
@@ -198,12 +198,12 @@ class Connection implements ResetInterface
                 ->update($this->configuration['table_name'])
                 ->set('delivered_at', '?')
                 ->where('id = ?');
-            $now = new \DateTime();
+            $now = new \DateTimeImmutable();
             $this->executeStatement($queryBuilder->getSQL(), [
                 $now,
                 $doctrineEnvelope['id'],
             ], [
-                Types::DATETIME_MUTABLE,
+                Types::DATETIME_IMMUTABLE,
             ]);
 
             $this->driverConnection->commit();
@@ -313,7 +313,7 @@ class Connection implements ResetInterface
 
     private function createAvailableMessagesQueryBuilder(): QueryBuilder
     {
-        $now = new \DateTime();
+        $now = new \DateTimeImmutable();
         $redeliverLimit = (clone $now)->modify(sprintf('-%d seconds', $this->configuration['redeliver_timeout']));
 
         return $this->createQueryBuilder()
@@ -325,8 +325,8 @@ class Connection implements ResetInterface
                 $now,
                 $this->configuration['queue_name'],
             ], [
-                Types::DATETIME_MUTABLE,
-                Types::DATETIME_MUTABLE,
+                Types::DATETIME_IMMUTABLE,
+                Types::DATETIME_IMMUTABLE,
             ]);
     }
 
@@ -406,11 +406,11 @@ class Connection implements ResetInterface
         $table->addColumn('queue_name', Types::STRING)
             ->setLength(190) // MySQL 5.6 only supports 191 characters on an indexed column in utf8mb4 mode
             ->setNotnull(true);
-        $table->addColumn('created_at', Types::DATETIME_MUTABLE)
+        $table->addColumn('created_at', Types::DATETIME_IMMUTABLE)
             ->setNotnull(true);
-        $table->addColumn('available_at', Types::DATETIME_MUTABLE)
+        $table->addColumn('available_at', Types::DATETIME_IMMUTABLE)
             ->setNotnull(true);
-        $table->addColumn('delivered_at', Types::DATETIME_MUTABLE)
+        $table->addColumn('delivered_at', Types::DATETIME_IMMUTABLE)
             ->setNotnull(false);
         $table->setPrimaryKey(['id']);
         $table->addIndex(['queue_name']);
