@@ -302,7 +302,9 @@ class Connection implements ResetInterface
             return;
         }
 
-        $this->addTableToSchema($schema);
+        if ($this->autoSetup) {
+            $this->addTableToSchema($schema);
+        }
     }
 
     /**
