@@ -403,9 +403,9 @@ class ConnectionTest extends TestCase
     }
 
     /**
-     * @dataProvider setupIndicesProvider
+     * @dataProvider setupIndexesProvider
      */
-    public function testSetupIndices(string $platformClass, array $expectedIndices)
+    public function testSetupIndexes(string $platformClass, array $expectedIndexes, array $options = [])
     {
         $driverConnection = $this->createMock(DBALConnection::class);
         $driverConnection->method('getConfiguration')->willReturn(new Configuration());
@@ -416,10 +416,10 @@ class ConnectionTest extends TestCase
         $expectedTable->addColumn('id', Types::BIGINT);
         $expectedTable->setPrimaryKey(['id']);
         // Make sure columns for indices exists so addIndex() will not throw
-        foreach (array_unique(array_merge(...$expectedIndices)) as $columnName) {
+        foreach (array_unique(array_merge(...$expectedIndexes)) as $columnName) {
             $expectedTable->addColumn($columnName, Types::STRING);
         }
-        foreach ($expectedIndices as $indexColumns) {
+        foreach ($expectedIndexes as $indexColumns) {
             $expectedTable->addIndex($indexColumns);
         }
         $schemaManager->method('createSchema')->willReturn($schema);
@@ -443,11 +443,17 @@ class ConnectionTest extends TestCase
         $connection->setup();
     }
 
-    public function setupIndicesProvider(): iterable
+    public function setupIndexesProvider(): iterable
     {
         yield 'MySQL' => [
             MySQL57Platform::class,
             [['delivered_at']],
+        ];
+
+        yield 'MySQL with forced index' => [
+            MySQL57Platform::class,
+            [['queue_name'], ['available_at'], ['delivered_at']],
+            ['force_indexes_creation' => true],
         ];
 
         yield 'Other platforms' => [
