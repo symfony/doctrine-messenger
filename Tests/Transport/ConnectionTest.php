@@ -15,7 +15,6 @@ use Doctrine\DBAL\Configuration;
 use Doctrine\DBAL\Connection as DBALConnection;
 use Doctrine\DBAL\Exception as DBALException;
 use Doctrine\DBAL\Platforms\AbstractPlatform;
-use Doctrine\DBAL\Platforms\MariaDb1060Platform;
 use Doctrine\DBAL\Platforms\MariaDBPlatform;
 use Doctrine\DBAL\Platforms\MySQL57Platform;
 use Doctrine\DBAL\Platforms\MySQL80Platform;
@@ -591,9 +590,16 @@ class ConnectionTest extends TestCase
             'SELECT m.* FROM messenger_messages m WHERE (m.queue_name = ?) AND (m.delivered_at is null OR m.delivered_at < ?) AND (m.available_at <= ?) ORDER BY available_at ASC LIMIT 1 FOR UPDATE',
         ];
 
-        if (class_exists(MariaDb1060Platform::class)) {
+        if (interface_exists(DBALException::class)) {
+            // DBAL 4+
+            $mariaDbPlatformClass = 'Doctrine\DBAL\Platforms\MariaDB1060Platform';
+        } else {
+            $mariaDbPlatformClass = 'Doctrine\DBAL\Platforms\MariaDb1060Platform';
+        }
+
+        if (class_exists($mariaDbPlatformClass)) {
             yield 'MariaDB106' => [
-                new MariaDb1060Platform(),
+                new $mariaDbPlatformClass(),
                 'SELECT m.* FROM messenger_messages m WHERE (m.queue_name = ?) AND (m.delivered_at is null OR m.delivered_at < ?) AND (m.available_at <= ?) ORDER BY available_at ASC LIMIT 1 FOR UPDATE SKIP LOCKED',
             ];
         }
