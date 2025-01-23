@@ -353,6 +353,22 @@ class DoctrineReceiverTest extends TestCase
         $receiver->reject($envelope);
     }
 
+    public function testKeepalive()
+    {
+        $serializer = $this->createSerializer();
+        $connection = $this->createMock(Connection::class);
+
+        $envelope = new Envelope(new \stdClass(), [new DoctrineReceivedStamp('1')]);
+        $receiver = new DoctrineReceiver($connection, $serializer);
+
+        $connection
+            ->expects($this->once())
+            ->method('keepalive')
+            ->with('1');
+
+        $receiver->keepalive($envelope);
+    }
+
     private function createDoctrineEnvelope(): array
     {
         return [
