@@ -328,6 +328,15 @@ class ConnectionTest extends TestCase
             ->method('createQueryBuilder')
             ->willReturn($queryBuilder);
 
+        $queryBuilder->expects($this->once())
+            ->method('getSQL')
+            ->willReturn('UPDATE');
+
+        $driverConnection->expects($this->once())
+            ->method('executeStatement')
+            ->with('UPDATE')
+            ->willReturn(1);
+
         $driverConnection->expects($this->once())
             ->method('commit');
 
@@ -362,6 +371,10 @@ class ConnectionTest extends TestCase
         $driverConnection->expects($this->once())
             ->method('createQueryBuilder')
             ->willReturn($queryBuilder);
+
+        $queryBuilder->expects($this->once())
+            ->method('getSQL')
+            ->willReturn('UPDATE');
 
         $driverConnection->expects($this->once())
             ->method('executeStatement')
