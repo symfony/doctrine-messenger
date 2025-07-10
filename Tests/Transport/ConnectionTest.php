@@ -772,7 +772,7 @@ class ConnectionTest extends TestCase
         $sequences = $schema->getSequences();
         $this->assertCount(1, $sequences);
         $sequence = array_pop($sequences);
-        $sequenceNameSuffix = substr($sequence->getName(), -strlen($expectedSuffix));
+        $sequenceNameSuffix = substr($sequence->getName(), -\strlen($expectedSuffix));
         $this->assertSame($expectedSuffix, $sequenceNameSuffix);
     }
 }
