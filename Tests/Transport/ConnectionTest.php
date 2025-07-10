@@ -584,7 +584,7 @@ class ConnectionTest extends TestCase
 
         yield 'SQL Server' => [
             class_exists(SQLServerPlatform::class) && !class_exists(SQLServer2012Platform::class) ? new SQLServerPlatform() : new SQLServer2012Platform(),
-            sprintf('SELECT m.* FROM messenger_messages m WITH (UPDLOCK, ROWLOCK%s) WHERE (m.queue_name = ?) AND (m.delivered_at is null OR m.delivered_at < ?) AND (m.available_at <= ?) ORDER BY available_at ASC OFFSET 0 ROWS FETCH NEXT 1 ROWS ONLY  ', method_exists(QueryBuilder::class, 'forUpdate') ? ', READPAST' : ''),
+            \sprintf('SELECT m.* FROM messenger_messages m WITH (UPDLOCK, ROWLOCK%s) WHERE (m.queue_name = ?) AND (m.delivered_at is null OR m.delivered_at < ?) AND (m.available_at <= ?) ORDER BY available_at ASC OFFSET 0 ROWS FETCH NEXT 1 ROWS ONLY  ', method_exists(QueryBuilder::class, 'forUpdate') ? ', READPAST' : ''),
         ];
 
         if (!class_exists(MySQL57Platform::class)) {
@@ -597,7 +597,7 @@ class ConnectionTest extends TestCase
             // DBAL < 4
             yield 'Oracle' => [
                 new OraclePlatform(),
-                sprintf('SELECT w.id AS "id", w.body AS "body", w.headers AS "headers", w.queue_name AS "queue_name", w.created_at AS "created_at", w.available_at AS "available_at", w.delivered_at AS "delivered_at" FROM messenger_messages w WHERE w.id IN (SELECT a.id FROM (SELECT m.id FROM messenger_messages m WHERE (m.queue_name = ?) AND (m.delivered_at is null OR m.delivered_at < ?) AND (m.available_at <= ?) ORDER BY available_at ASC) a WHERE ROWNUM <= 1) FOR UPDATE%s', method_exists(QueryBuilder::class, 'forUpdate') ? ' SKIP LOCKED' : ''),
+                \sprintf('SELECT w.id AS "id", w.body AS "body", w.headers AS "headers", w.queue_name AS "queue_name", w.created_at AS "created_at", w.available_at AS "available_at", w.delivered_at AS "delivered_at" FROM messenger_messages w WHERE w.id IN (SELECT a.id FROM (SELECT m.id FROM messenger_messages m WHERE (m.queue_name = ?) AND (m.delivered_at is null OR m.delivered_at < ?) AND (m.available_at <= ?) ORDER BY available_at ASC) a WHERE ROWNUM <= 1) FOR UPDATE%s', method_exists(QueryBuilder::class, 'forUpdate') ? ' SKIP LOCKED' : ''),
             ];
         }
     }
@@ -712,7 +712,7 @@ class ConnectionTest extends TestCase
         $sequences = $schema->getSequences();
         $this->assertCount(1, $sequences);
         $sequence = array_pop($sequences);
-        $sequenceNameSuffix = substr($sequence->getName(), -strlen($expectedSuffix));
+        $sequenceNameSuffix = substr($sequence->getName(), -\strlen($expectedSuffix));
         $this->assertSame($expectedSuffix, $sequenceNameSuffix);
     }
 }
