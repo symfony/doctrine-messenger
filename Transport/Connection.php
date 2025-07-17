@@ -15,7 +15,6 @@ use Doctrine\DBAL\Connection as DBALConnection;
 use Doctrine\DBAL\Driver\Exception as DriverException;
 use Doctrine\DBAL\Exception as DBALException;
 use Doctrine\DBAL\Exception\TableNotFoundException;
-use Doctrine\DBAL\LockMode;
 use Doctrine\DBAL\Platforms\AbstractMySQLPlatform;
 use Doctrine\DBAL\Platforms\OraclePlatform;
 use Doctrine\DBAL\Platforms\PostgreSQLPlatform;
@@ -194,21 +193,7 @@ class Connection implements ResetInterface
                 $sql = $query->getSQL();
             }
 
-            if (method_exists(QueryBuilder::class, 'forUpdate')) {
-                $sql = $this->addLockMode($query, $sql);
-            } else {
-                if (preg_match('/FROM (.+) WHERE/', $sql, $matches)) {
-                    $fromClause = $matches[1];
-                    $sql = str_replace(
-                        \sprintf('FROM %s WHERE', $fromClause),
-                        \sprintf('FROM %s WHERE', $this->driverConnection->getDatabasePlatform()->appendLockHint($fromClause, LockMode::PESSIMISTIC_WRITE)),
-                        $sql
-                    );
-                }
-
-                // use SELECT ... FOR UPDATE to lock table
-                $sql .= ' '.$this->driverConnection->getDatabasePlatform()->getWriteLockSQL();
-            }
+            $sql = $this->addLockMode($query, $sql);
 
             $doctrineEnvelope = $this->executeQuery(
                 $sql,
@@ -550,11 +535,7 @@ class Connection implements ResetInterface
             ->setNotnull(true);
         $table->addColumn('delivered_at', Types::DATETIME_IMMUTABLE)
             ->setNotnull(false);
-        if (class_exists(PrimaryKeyConstraint::class)) {
-            $table->addPrimaryKeyConstraint(new PrimaryKeyConstraint(null, [new UnqualifiedName(Identifier::unquoted('id'))], true));
-        } else {
-            $table->setPrimaryKey(['id']);
-        }
+        $table->addPrimaryKeyConstraint(new PrimaryKeyConstraint(null, [new UnqualifiedName(Identifier::unquoted('id'))], true));
         $table->addIndex(['queue_name']);
         $table->addIndex(['available_at']);
         $table->addIndex(['delivered_at']);
