@@ -27,6 +27,7 @@ use Doctrine\DBAL\Result;
 use Doctrine\DBAL\Schema\AbstractAsset;
 use Doctrine\DBAL\Schema\AbstractSchemaManager;
 use Doctrine\DBAL\Schema\Comparator;
+use Doctrine\DBAL\Schema\ComparatorConfig;
 use Doctrine\DBAL\Schema\Schema;
 use Doctrine\DBAL\Schema\SchemaDiff;
 use Doctrine\DBAL\Schema\Synchronizer\SchemaSynchronizer;
@@ -614,6 +615,10 @@ class Connection implements ResetInterface
 
     private function createComparator(AbstractSchemaManager $schemaManager): Comparator
     {
+        if (class_exists(ComparatorConfig::class)) {
+            return $schemaManager->createComparator((new ComparatorConfig())->withReportModifiedIndexes(false));
+        }
+
         return method_exists($schemaManager, 'createComparator')
             ? $schemaManager->createComparator()
             : new Comparator();
