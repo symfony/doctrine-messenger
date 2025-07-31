@@ -31,6 +31,7 @@ use Doctrine\DBAL\Result;
 use Doctrine\DBAL\Schema\AbstractSchemaManager;
 use Doctrine\DBAL\Schema\Schema;
 use Doctrine\DBAL\Schema\SchemaConfig;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Messenger\Bridge\Doctrine\Tests\Fixtures\DummyMessage;
@@ -455,9 +456,7 @@ class ConnectionTest extends TestCase
         return $stmt;
     }
 
-    /**
-     * @dataProvider buildConfigurationProvider
-     */
+    #[DataProvider('buildConfigurationProvider')]
     public function testBuildConfiguration(string $dsn, array $options, string $expectedConnection, string $expectedTableName, int $expectedRedeliverTimeout, string $expectedQueue, bool $expectedAutoSetup)
     {
         $config = Connection::buildConfiguration($dsn, $options);
@@ -641,9 +640,7 @@ class ConnectionTest extends TestCase
         $this->assertEquals(['type' => DummyMessage::class], $doctrineEnvelopes[1]['headers']);
     }
 
-    /**
-     * @dataProvider providePlatformSql
-     */
+    #[DataProvider('providePlatformSql')]
     public function testGeneratedSql(AbstractPlatform $platform, string $expectedSql)
     {
         $driverConnection = $this->createMock(DBALConnection::class);
@@ -806,9 +803,7 @@ class ConnectionTest extends TestCase
         $this->assertSame([], $table->getColumns(), 'The table was not overwritten');
     }
 
-    /**
-     * @dataProvider provideFindAllSqlGeneratedByPlatform
-     */
+    #[DataProvider('provideFindAllSqlGeneratedByPlatform')]
     public function testFindAllSqlGenerated(AbstractPlatform $platform, string $expectedSql)
     {
         $driverConnection = $this->createMock(DBALConnection::class);

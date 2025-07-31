@@ -16,15 +16,14 @@ use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\DriverManager;
 use Doctrine\DBAL\Schema\DefaultSchemaManagerFactory;
 use Doctrine\DBAL\Tools\DsnParser;
+use PHPUnit\Framework\Attributes\Group;
+use PHPUnit\Framework\Attributes\RequiresPhpExtension;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Messenger\Bridge\Doctrine\Tests\Fixtures\DummyMessage;
 use Symfony\Component\Messenger\Bridge\Doctrine\Transport\PostgreSqlConnection;
 
-/**
- * @requires extension pdo_pgsql
- *
- * @group integration
- */
+#[RequiresPhpExtension('pdo_pgsql')]
+#[Group('integration')]
 class DoctrinePostgreSqlIntegrationTest extends TestCase
 {
     private Connection $driverConnection;
