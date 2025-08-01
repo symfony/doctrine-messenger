@@ -22,6 +22,7 @@ use Doctrine\DBAL\Query\ForUpdate\ConflictResolutionMode;
 use Doctrine\DBAL\Query\QueryBuilder;
 use Doctrine\DBAL\Result;
 use Doctrine\DBAL\Schema\AbstractAsset;
+use Doctrine\DBAL\Schema\ComparatorConfig;
 use Doctrine\DBAL\Schema\Name\Identifier;
 use Doctrine\DBAL\Schema\Name\UnqualifiedName;
 use Doctrine\DBAL\Schema\PrimaryKeyConstraint;
@@ -558,8 +559,14 @@ class Connection implements ResetInterface
     private function updateSchema(): void
     {
         $schemaManager = $this->driverConnection->createSchemaManager();
-        $schemaDiff = $schemaManager->createComparator()
-            ->compareSchemas($schemaManager->introspectSchema(), $this->getSchema());
+
+        if (class_exists(ComparatorConfig::class)) {
+            $comparator = $schemaManager->createComparator((new ComparatorConfig())->withReportModifiedIndexes(false));
+        } else {
+            $comparator = $schemaManager->createComparator();
+        }
+
+        $schemaDiff = $comparator->compareSchemas($schemaManager->introspectSchema(), $this->getSchema());
         $platform = $this->driverConnection->getDatabasePlatform();
 
         if ($platform->supportsSchemas()) {
