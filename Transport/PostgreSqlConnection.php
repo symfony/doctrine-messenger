@@ -112,13 +112,13 @@ final class PostgreSqlConnection extends Connection
         return [
             // create trigger function
             \sprintf(<<<'SQL'
-CREATE OR REPLACE FUNCTION %1$s() RETURNS TRIGGER AS $$
-    BEGIN
-        PERFORM pg_notify('%2$s', NEW.queue_name::text);
-        RETURN NEW;
-    END;
-$$ LANGUAGE plpgsql;
-SQL
+                CREATE OR REPLACE FUNCTION %1$s() RETURNS TRIGGER AS $$
+                    BEGIN
+                        PERFORM pg_notify('%2$s', NEW.queue_name::text);
+                        RETURN NEW;
+                    END;
+                $$ LANGUAGE plpgsql;
+                SQL
                 , $functionName, $this->configuration['table_name']),
             // register trigger
             \sprintf('DROP TRIGGER IF EXISTS notify_trigger ON %s;', $this->configuration['table_name']),
