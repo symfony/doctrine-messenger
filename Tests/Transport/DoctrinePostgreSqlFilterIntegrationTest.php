@@ -54,8 +54,10 @@ class DoctrinePostgreSqlFilterIntegrationTest extends TestCase
 
     protected function tearDown(): void
     {
+        if (!isset($this->driverConnection)) {
+            return;
+        }
         $this->removeAssets();
-
         $this->driverConnection->close();
     }
 

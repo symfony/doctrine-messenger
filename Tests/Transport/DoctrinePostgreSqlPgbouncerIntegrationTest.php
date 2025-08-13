@@ -76,6 +76,9 @@ class DoctrinePostgreSqlPgbouncerIntegrationTest extends TestCase
 
     protected function tearDown(): void
     {
+        if (!isset($this->driverConnection)) {
+            return;
+        }
         $this->createSchemaManager()->dropTable('queue_table');
         $this->driverConnection->close();
     }

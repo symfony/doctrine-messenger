@@ -49,6 +49,9 @@ class DoctrinePostgreSqlIntegrationTest extends TestCase
 
     protected function tearDown(): void
     {
+        if (!isset($this->driverConnection)) {
+            return;
+        }
         $this->driverConnection->createSchemaManager()->dropTable('queue_table');
         $this->driverConnection->close();
     }
