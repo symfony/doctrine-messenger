@@ -25,6 +25,7 @@ use Doctrine\DBAL\Result;
 use Doctrine\DBAL\Schema\AbstractAsset;
 use Doctrine\DBAL\Schema\Name\Identifier;
 use Doctrine\DBAL\Schema\Name\UnqualifiedName;
+use Doctrine\DBAL\Schema\NamedObject;
 use Doctrine\DBAL\Schema\PrimaryKeyConstraint;
 use Doctrine\DBAL\Schema\AbstractSchemaManager;
 use Doctrine\DBAL\Schema\Comparator;
@@ -325,7 +326,11 @@ class Connection implements ResetInterface
         $configuration = $this->driverConnection->getConfiguration();
         $assetFilter = $configuration->getSchemaAssetsFilter();
         $configuration->setSchemaAssetsFilter(function ($tableName) {
-            if ($tableName instanceof AbstractAsset) {
+            if ($tableName instanceof NamedObject) {
+                // DBAL 4.4+
+                $tableName = $tableName->getObjectName()->toString();
+            } elseif ($tableName instanceof AbstractAsset) {
+                // DBAL < 4.4
                 $tableName = $tableName->getName();
             }
 
