@@ -26,6 +26,7 @@ use Doctrine\DBAL\Query\ForUpdate\ConflictResolutionMode;
 use Doctrine\DBAL\Query\QueryBuilder;
 use Doctrine\DBAL\Result;
 use Doctrine\DBAL\Schema\AbstractSchemaManager;
+use Doctrine\DBAL\Schema\NamedObject;
 use Doctrine\DBAL\Schema\Schema;
 use Doctrine\DBAL\Schema\SchemaConfig;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -750,7 +751,14 @@ class ConnectionTest extends TestCase
         $sequences = $schema->getSequences();
         $this->assertCount(1, $sequences);
         $sequence = array_pop($sequences);
-        $sequenceNameSuffix = substr($sequence->getName(), -\strlen($expectedSuffix));
+        if ($sequence instanceof NamedObject) {
+            // DBAL 4.4+
+            $sequenceName = $sequence->getObjectName()->toString();
+        } else {
+            // DBAL < 4.4
+            $sequenceName = $sequence->getName();
+        }
+        $sequenceNameSuffix = substr($sequenceName, -\strlen($expectedSuffix));
         $this->assertSame($expectedSuffix, $sequenceNameSuffix);
     }
 }
