@@ -16,6 +16,7 @@ use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\DriverManager;
 use Doctrine\DBAL\Schema\Column;
 use Doctrine\DBAL\Schema\DefaultSchemaManagerFactory;
+use Doctrine\DBAL\Schema\NamedObject;
 use Doctrine\DBAL\Schema\Sequence;
 use Doctrine\DBAL\Schema\Table;
 use Doctrine\DBAL\Tools\DsnParser;
@@ -111,7 +112,15 @@ class DoctrinePostgreSqlFilterIntegrationTest extends TestCase
 
         $sequences = $schemaManager->listSequences();
         foreach ($sequences as $sequence) {
-            if ($sequence->getName() === $name) {
+            if ($sequence instanceof NamedObject) {
+                // DBAL 4.4+
+                $sequenceName = $sequence->getObjectName()->toString();
+            } else {
+                // DBAL < 4.4
+                $sequenceName = $sequence->getName();
+            }
+
+            if ($sequenceName === $name) {
                 return true;
             }
         }
