@@ -863,6 +863,12 @@ class ConnectionTest extends TestCase
     {
         $driverConnection = $this->createMock(DBALConnection::class);
         $driverConnection->method('getDatabasePlatform')->willReturn(new OraclePlatform());
+
+        // Mock the result returned by executeQuery to be an Oracle version 12.1.0 or higher.
+        $result = $this->createMock(Result::class);
+        $result->method('fetchOne')->willReturn('12.1.0');
+        $driverConnection->method('executeQuery')->willReturn($result);
+
         $schema = new Schema();
 
         $connection = new Connection(['table_name' => 'messenger_messages'], $driverConnection);
