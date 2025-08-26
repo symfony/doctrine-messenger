@@ -321,7 +321,9 @@ class Connection implements ResetInterface
                 throw new \TypeError(\sprintf('The table name must be an instance of "%s" or a string ("%s" given).', AbstractAsset::class, get_debug_type($tableName)));
             }
 
-            return $tableName === $this->configuration['table_name'];
+            // SchemaAssetsFilter needs to match the messenger table name and also the messenger sequence name to make $schemaDiff work correctly in updateSchema()
+            // This may also work for other databases if their sequence name is suffixed with '_seq', '_id_seq' or similar.
+            return str_starts_with($tableName, $this->configuration['table_name']); // MESSENGER_MESSAGES*
         });
         $this->updateSchema();
         $configuration->setSchemaAssetsFilter($assetFilter);
@@ -548,9 +550,13 @@ class Connection implements ResetInterface
 
         // We need to create a sequence for Oracle and set the id column to get the correct nextval
         if ($this->driverConnection->getDatabasePlatform() instanceof OraclePlatform) {
-            $idColumn->setDefault($this->configuration['table_name'].self::ORACLE_SEQUENCES_SUFFIX.'.nextval');
+            $serverVersion = $this->driverConnection->executeQuery("SELECT version FROM product_component_version WHERE product LIKE 'Oracle Database%'")->fetchOne();
+            if (version_compare($serverVersion, '12.1.0', '>=')) {
+                $idColumn->setAutoincrement(false); // disable the creation of SEQUENCE and TRIGGER
+                $idColumn->setDefault($this->configuration['table_name'].self::ORACLE_SEQUENCES_SUFFIX.'.nextval');
 
-            $schema->createSequence($this->configuration['table_name'].self::ORACLE_SEQUENCES_SUFFIX);
+                $schema->createSequence($this->configuration['table_name'].self::ORACLE_SEQUENCES_SUFFIX);
+            }
         }
     }
 
