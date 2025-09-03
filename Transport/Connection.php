@@ -30,6 +30,7 @@ use Doctrine\DBAL\Schema\PrimaryKeyConstraint;
 use Doctrine\DBAL\Schema\Schema;
 use Doctrine\DBAL\Schema\Table;
 use Doctrine\DBAL\Types\Types;
+use Satag\DoctrineFirebirdDriver\Platforms\FirebirdPlatform;
 use Symfony\Component\Messenger\Exception\InvalidArgumentException;
 use Symfony\Component\Messenger\Exception\TransportException;
 use Symfony\Contracts\Service\ResetInterface;
@@ -414,7 +415,9 @@ class Connection implements ResetInterface
 
         $alias .= '.';
 
-        if (!$this->driverConnection->getDatabasePlatform() instanceof OraclePlatform) {
+        if (!$this->driverConnection->getDatabasePlatform() instanceof FirebirdPlatform
+            && !$this->driverConnection->getDatabasePlatform() instanceof OraclePlatform
+        ) {
             return $queryBuilder->select($alias.'*');
         }
 
