@@ -166,12 +166,12 @@ class Connection implements ResetInterface
         if ($this->driverConnection->getDatabasePlatform() instanceof MySQLPlatform) {
             try {
                 $this->driverConnection->delete($this->configuration['table_name'], ['delivered_at' => '9999-12-31 23:59:59']);
-            } catch (DriverException $e) {
-                // Ignore the exception
             } catch (TableNotFoundException $e) {
                 if ($this->autoSetup) {
                     $this->setup();
                 }
+            } catch (DriverException $e) {
+                // Ignore the exception
             }
         }
 
