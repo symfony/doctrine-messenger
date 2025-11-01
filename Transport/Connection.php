@@ -167,12 +167,12 @@ class Connection implements ResetInterface
             try {
                 $this->driverConnection->delete($this->configuration['table_name'], ['delivered_at' => '9999-12-31 23:59:59']);
                 $this->doMysqlCleanup = false;
-            } catch (DriverException $e) {
-                // Ignore the exception
             } catch (TableNotFoundException $e) {
                 if ($this->autoSetup) {
                     $this->setup();
                 }
+            } catch (DriverException $e) {
+                // Ignore the exception
             }
         }
 
