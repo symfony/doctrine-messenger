@@ -74,6 +74,13 @@ class PostgreSqlConnectionTest extends TestCase
                 return false;
             }
 
+            public function getNotify()
+            {
+                ++$this->notifyCalls;
+
+                return false;
+            }
+
             public function countNotifyCalls()
             {
                 return $this->notifyCalls;
