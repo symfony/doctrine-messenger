@@ -67,7 +67,7 @@ class PostgreSqlConnectionTest extends TestCase
         $wrappedConnection = new class {
             private int $notifyCalls = 0;
 
-            public function pgsqlGetNotify()
+            public function getNotify()
             {
                 ++$this->notifyCalls;
 
