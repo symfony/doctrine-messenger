@@ -667,6 +667,22 @@ class ConnectionTest extends TestCase
         $connection = new Connection(['table_name' => 'queue_table'], $driverConnection);
         $connection->configureSchema($schema, $driverConnection, fn () => true);
         $this->assertTrue($schema->hasTable('queue_table'));
+
+        // Ensure the covering index for the SELECT query exists
+        $table = $schema->getTable('queue_table');
+        $hasCoveringIndex = false;
+        foreach ($table->getIndexes() as $index) {
+            // Doctrine DBAL 4+: use getIndexedColumns(); fallback to getColumns() for older versions
+            $columns = method_exists($index, 'getIndexedColumns')
+                ? array_map(static fn ($ic) => $ic->getColumnName()->toString(), $index->getIndexedColumns())
+                : $index->getColumns();
+
+            if ($columns === ['queue_name', 'available_at', 'delivered_at', 'id']) {
+                $hasCoveringIndex = true;
+                break;
+            }
+        }
+        $this->assertTrue($hasCoveringIndex, 'Expected covering index on [queue_name, available_at, delivered_at, id] not found');
     }
 
     public function testConfigureSchemaDifferentDbalConnection()
