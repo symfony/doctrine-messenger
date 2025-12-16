@@ -12,11 +12,9 @@
 namespace Symfony\Component\Messenger\Bridge\Doctrine\Transport;
 
 use Doctrine\DBAL\Connection as DBALConnection;
-use Doctrine\DBAL\Driver\Exception as DriverException;
 use Doctrine\DBAL\Exception as DBALException;
 use Doctrine\DBAL\Exception\TableNotFoundException;
 use Doctrine\DBAL\LockMode;
-use Doctrine\DBAL\Platforms\AbstractMySQLPlatform;
 use Doctrine\DBAL\Platforms\OraclePlatform;
 use Doctrine\DBAL\Platforms\PostgreSQLPlatform;
 use Doctrine\DBAL\Query\ForUpdate\ConflictResolutionMode;
@@ -27,8 +25,6 @@ use Doctrine\DBAL\Schema\Name\Identifier;
 use Doctrine\DBAL\Schema\Name\UnqualifiedName;
 use Doctrine\DBAL\Schema\NamedObject;
 use Doctrine\DBAL\Schema\PrimaryKeyConstraint;
-use Doctrine\DBAL\Schema\AbstractSchemaManager;
-use Doctrine\DBAL\Schema\Comparator;
 use Doctrine\DBAL\Schema\ComparatorConfig;
 use Doctrine\DBAL\Schema\Schema;
 use Doctrine\DBAL\Schema\Table;
@@ -163,19 +159,6 @@ class Connection implements ResetInterface
 
     public function get(): ?array
     {
-        if ($this->doMysqlCleanup && $this->driverConnection->getDatabasePlatform() instanceof AbstractMySQLPlatform) {
-            try {
-                $this->driverConnection->delete($this->configuration['table_name'], ['delivered_at' => '9999-12-31 23:59:59']);
-                $this->doMysqlCleanup = false;
-            } catch (TableNotFoundException $e) {
-                if ($this->autoSetup) {
-                    $this->setup();
-                }
-            } catch (DriverException $e) {
-                // Ignore the exception
-            }
-        }
-
         get:
         $this->driverConnection->beginTransaction();
         try {
@@ -263,14 +246,6 @@ class Connection implements ResetInterface
     public function ack(string $id): bool
     {
         try {
-            if ($this->driverConnection->getDatabasePlatform() instanceof AbstractMySQLPlatform) {
-                if ($updated = $this->driverConnection->update($this->configuration['table_name'], ['delivered_at' => '9999-12-31 23:59:59'], ['id' => $id]) > 0) {
-                    $this->doMysqlCleanup = true;
-                }
-
-                return $updated;
-            }
-
             return $this->driverConnection->delete($this->configuration['table_name'], ['id' => $id]) > 0;
         } catch (DBALException $exception) {
             throw new TransportException($exception->getMessage(), 0, $exception);
@@ -280,14 +255,6 @@ class Connection implements ResetInterface
     public function reject(string $id): bool
     {
         try {
-            if ($this->driverConnection->getDatabasePlatform() instanceof AbstractMySQLPlatform) {
-                if ($updated = $this->driverConnection->update($this->configuration['table_name'], ['delivered_at' => '9999-12-31 23:59:59'], ['id' => $id]) > 0) {
-                    $this->doMysqlCleanup = true;
-                }
-
-                return $updated;
-            }
-
             return $this->driverConnection->delete($this->configuration['table_name'], ['id' => $id]) > 0;
         } catch (DBALException $exception) {
             throw new TransportException($exception->getMessage(), 0, $exception);
@@ -568,9 +535,7 @@ class Connection implements ResetInterface
         } else {
             $table->setPrimaryKey(['id']);
         }
-        $table->addIndex(['queue_name']);
-        $table->addIndex(['available_at']);
-        $table->addIndex(['delivered_at']);
+        $table->addIndex(['queue_name', 'available_at', 'delivered_at', 'id']);
 
         // We need to create a sequence for Oracle and set the id column to get the correct nextval
         if ($this->driverConnection->getDatabasePlatform() instanceof OraclePlatform) {
