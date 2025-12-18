@@ -33,8 +33,8 @@ class DoctrineTransportTest extends TestCase
     public function testReceivesMessages()
     {
         $transport = $this->getTransport(
-            $serializer = $this->createMock(SerializerInterface::class),
-            $connection = $this->createMock(Connection::class)
+            $serializer = $this->createStub(SerializerInterface::class),
+            $connection = $this->createStub(Connection::class)
         );
 
         $decodedMessage = new DummyMessage('Decoded.');
@@ -60,7 +60,7 @@ class DoctrineTransportTest extends TestCase
         );
 
         $schema = new Schema();
-        $dbalConnection = $this->createMock(DbalConnection::class);
+        $dbalConnection = $this->createStub(DbalConnection::class);
 
         $connection->expects($this->once())
             ->method('configureSchema')
@@ -71,8 +71,8 @@ class DoctrineTransportTest extends TestCase
 
     private function getTransport(?SerializerInterface $serializer = null, ?Connection $connection = null): DoctrineTransport
     {
-        $serializer ??= $this->createMock(SerializerInterface::class);
-        $connection ??= $this->createMock(Connection::class);
+        $serializer ??= $this->createStub(SerializerInterface::class);
+        $connection ??= $this->createStub(Connection::class);
 
         return new DoctrineTransport($connection, $serializer);
     }

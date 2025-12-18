@@ -37,8 +37,8 @@ class ConnectionTest extends TestCase
 {
     public function testGetAMessageWillChangeItsStatus()
     {
-        $queryBuilder = $this->getQueryBuilderMock();
-        $driverConnection = $this->getDBALConnectionMock();
+        $queryBuilder = $this->getQueryBuilderStub();
+        $driverConnection = $this->getDBALConnection();
         $stmt = $this->getResultMock([
             'id' => 1,
             'body' => '{"message":"Hi"}',
@@ -73,8 +73,8 @@ class ConnectionTest extends TestCase
 
     public function testGetWithNoPendingMessageWillReturnNull()
     {
-        $queryBuilder = $this->getQueryBuilderMock();
-        $driverConnection = $this->getDBALConnectionMock();
+        $queryBuilder = $this->getQueryBuilderStub();
+        $driverConnection = $this->getDBALConnection(true);
         $stmt = $this->getResultMock(false);
 
         $queryBuilder
@@ -106,8 +106,8 @@ class ConnectionTest extends TestCase
             $this->markTestSkipped('This test is for when forUpdate method exists.');
         }
 
-        $queryBuilder = $this->getQueryBuilderMock();
-        $driverConnection = $this->getDBALConnectionMock();
+        $queryBuilder = $this->getQueryBuilderStub();
+        $driverConnection = $this->getDBALConnection(true);
         $stmt = $this->getResultMock(false);
 
         $queryBuilder
@@ -146,8 +146,8 @@ class ConnectionTest extends TestCase
             $this->markTestSkipped('This test is for when forUpdate method does not exist.');
         }
 
-        $queryBuilder = $this->getQueryBuilderMock();
-        $driverConnection = $this->getDBALConnectionMock();
+        $queryBuilder = $this->getQueryBuilderStub();
+        $driverConnection = $this->getDBALConnection();
         $stmt = $this->getResultMock(false);
 
         $queryBuilder
@@ -179,7 +179,7 @@ class ConnectionTest extends TestCase
     public function testItThrowsATransportExceptionIfItCannotAcknowledgeMessage()
     {
         $this->expectException(TransportException::class);
-        $driverConnection = $this->getDBALConnectionMock();
+        $driverConnection = $this->getDBALConnection();
         $driverConnection->method('delete')->willThrowException($this->createStub(DBALException::class));
 
         $connection = new Connection([], $driverConnection);
@@ -189,7 +189,7 @@ class ConnectionTest extends TestCase
     public function testItThrowsATransportExceptionIfItCannotRejectMessage()
     {
         $this->expectException(TransportException::class);
-        $driverConnection = $this->getDBALConnectionMock();
+        $driverConnection = $this->getDBALConnection();
         $driverConnection->method('delete')->willThrowException($this->createStub(DBALException::class));
 
         $connection = new Connection([], $driverConnection);
@@ -199,7 +199,7 @@ class ConnectionTest extends TestCase
     public function testSend()
     {
         $queryBuilder = $this->getQueryBuilderMock();
-        $driverConnection = $this->getDBALConnectionMock();
+        $driverConnection = $this->getDBALConnection(true);
 
         $driverConnection->expects($this->once())
             ->method('createQueryBuilder')
@@ -248,7 +248,7 @@ class ConnectionTest extends TestCase
     public function testSendLastInsertIdReturnsInteger()
     {
         $queryBuilder = $this->getQueryBuilderMock();
-        $driverConnection = $this->getDBALConnectionMock();
+        $driverConnection = $this->getDBALConnection(true);
 
         $driverConnection->expects($this->once())
             ->method('createQueryBuilder')
@@ -294,21 +294,21 @@ class ConnectionTest extends TestCase
         self::assertSame('1', $id);
     }
 
-    private function getDBALConnectionMock()
+    private function getDBALConnection(bool $mock = false)
     {
-        $driverConnection = $this->createMock(DBALConnection::class);
-        $platform = $this->createMock(AbstractPlatform::class);
+        $driverConnection = $mock ? $this->createMock(DBALConnection::class) : $this->createStub(DBALConnection::class);
+        $platform = $this->createStub(AbstractPlatform::class);
 
         if (!method_exists(QueryBuilder::class, 'forUpdate')) {
             $platform->method('getWriteLockSQL')->willReturn('FOR UPDATE SKIP LOCKED');
         }
 
-        $configuration = $this->createMock(\Doctrine\DBAL\Configuration::class);
+        $configuration = $this->createStub(\Doctrine\DBAL\Configuration::class);
         $driverConnection->method('getDatabasePlatform')->willReturn($platform);
         $driverConnection->method('getConfiguration')->willReturn($configuration);
 
-        $schemaManager = $this->createMock(AbstractSchemaManager::class);
-        $schemaConfig = $this->createMock(SchemaConfig::class);
+        $schemaManager = $this->createStub(AbstractSchemaManager::class);
+        $schemaConfig = $this->createStub(SchemaConfig::class);
         $schemaConfig->method('getMaxIdentifierLength')->willReturn(63);
         $schemaConfig->method('getDefaultTableOptions')->willReturn([]);
         $schemaManager->method('createSchemaConfig')->willReturn($schemaConfig);
@@ -324,6 +324,24 @@ class ConnectionTest extends TestCase
     private function getQueryBuilderMock()
     {
         $queryBuilder = $this->createMock(QueryBuilder::class);
+
+        $queryBuilder->method('select')->willReturn($queryBuilder);
+        $queryBuilder->method('update')->willReturn($queryBuilder);
+        $queryBuilder->method('from')->willReturn($queryBuilder);
+        $queryBuilder->method('set')->willReturn($queryBuilder);
+        $queryBuilder->method('where')->willReturn($queryBuilder);
+        $queryBuilder->method('andWhere')->willReturn($queryBuilder);
+        $queryBuilder->method('orderBy')->willReturn($queryBuilder);
+        $queryBuilder->method('setMaxResults')->willReturn($queryBuilder);
+        $queryBuilder->method('setParameter')->willReturn($queryBuilder);
+        $queryBuilder->method('setParameters')->willReturn($queryBuilder);
+
+        return $queryBuilder;
+    }
+
+    private function getQueryBuilderStub()
+    {
+        $queryBuilder = $this->createStub(QueryBuilder::class);
 
         $queryBuilder->method('select')->willReturn($queryBuilder);
         $queryBuilder->method('update')->willReturn($queryBuilder);
@@ -452,8 +470,8 @@ class ConnectionTest extends TestCase
 
     public function testFind()
     {
-        $queryBuilder = $this->getQueryBuilderMock();
-        $driverConnection = $this->getDBALConnectionMock();
+        $queryBuilder = $this->getQueryBuilderStub();
+        $driverConnection = $this->getDBALConnection();
         $id = 1;
         $stmt = $this->getResultMock([
             'id' => $id,
@@ -487,8 +505,8 @@ class ConnectionTest extends TestCase
 
     public function testFindAll()
     {
-        $queryBuilder = $this->getQueryBuilderMock();
-        $driverConnection = $this->getDBALConnectionMock();
+        $queryBuilder = $this->getQueryBuilderStub();
+        $driverConnection = $this->getDBALConnection();
         $message1 = [
             'id' => 1,
             'body' => '{"message":"Hi"}',
@@ -546,10 +564,10 @@ class ConnectionTest extends TestCase
         $driverConnection->method('createQueryBuilder')->willReturnCallback(fn () => new QueryBuilder($driverConnection));
 
         if (class_exists(Result::class)) {
-            $result = $this->createMock(Result::class);
+            $result = $this->createStub(Result::class);
             $result->method('fetchAssociative')->willReturn(false);
         } else {
-            $result = $this->createMock(ResultStatement::class);
+            $result = $this->createStub(ResultStatement::class);
             $result->method('fetch')->willReturn(false);
         }
 
@@ -604,7 +622,7 @@ class ConnectionTest extends TestCase
 
     public function testConfigureSchema()
     {
-        $driverConnection = $this->getDBALConnectionMock();
+        $driverConnection = $this->getDBALConnection();
         $schema = new Schema();
 
         $connection = new Connection(['table_name' => 'queue_table'], $driverConnection);
@@ -630,8 +648,8 @@ class ConnectionTest extends TestCase
 
     public function testConfigureSchemaDifferentDbalConnection()
     {
-        $driverConnection = $this->getDBALConnectionMock();
-        $driverConnection2 = $this->getDBALConnectionMock();
+        $driverConnection = $this->getDBALConnection();
+        $driverConnection2 = $this->getDBALConnection();
         $schema = new Schema();
 
         $connection = new Connection([], $driverConnection);
@@ -641,7 +659,7 @@ class ConnectionTest extends TestCase
 
     public function testConfigureSchemaTableExists()
     {
-        $driverConnection = $this->getDBALConnectionMock();
+        $driverConnection = $this->getDBALConnection();
         $schema = new Schema();
         $schema->createTable('messenger_messages');
 
@@ -663,10 +681,10 @@ class ConnectionTest extends TestCase
         });
 
         if (class_exists(Result::class)) {
-            $result = $this->createMock(Result::class);
+            $result = $this->createStub(Result::class);
             $result->method('fetchAllAssociative')->willReturn([]);
         } else {
-            $result = $this->createMock(ResultStatement::class);
+            $result = $this->createStub(ResultStatement::class);
             $result->method('fetchAll')->willReturn([]);
         }
 
@@ -717,7 +735,7 @@ class ConnectionTest extends TestCase
 
     public function testConfigureSchemaOracleSequenceNameSuffixed()
     {
-        $driverConnection = $this->createMock(DBALConnection::class);
+        $driverConnection = $this->createStub(DBALConnection::class);
         $driverConnection->method('getDatabasePlatform')->willReturn(new OraclePlatform());
         $schema = new Schema();
 
