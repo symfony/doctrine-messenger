@@ -27,7 +27,7 @@ class DoctrineTransportFactoryTest extends TestCase
     public function testSupports()
     {
         $factory = new DoctrineTransportFactory(
-            $this->createMock(ConnectionRegistry::class)
+            $this->createStub(ConnectionRegistry::class)
         );
 
         $this->assertTrue($factory->supports('doctrine://default', []));
@@ -36,8 +36,8 @@ class DoctrineTransportFactoryTest extends TestCase
 
     public function testCreateTransport()
     {
-        $driverConnection = $this->createMock(\Doctrine\DBAL\Connection::class);
-        $platform = $this->createMock(AbstractPlatform::class);
+        $driverConnection = $this->createStub(\Doctrine\DBAL\Connection::class);
+        $platform = $this->createStub(AbstractPlatform::class);
         $driverConnection->method('getDatabasePlatform')->willReturn($platform);
         $registry = $this->createMock(ConnectionRegistry::class);
 
@@ -46,7 +46,7 @@ class DoctrineTransportFactoryTest extends TestCase
             ->willReturn($driverConnection);
 
         $factory = new DoctrineTransportFactory($registry);
-        $serializer = $this->createMock(SerializerInterface::class);
+        $serializer = $this->createStub(SerializerInterface::class);
 
         $this->assertEquals(
             new DoctrineTransport(new Connection(PostgreSqlConnection::buildConfiguration('doctrine://default'), $driverConnection), $serializer),
@@ -56,8 +56,8 @@ class DoctrineTransportFactoryTest extends TestCase
 
     public function testCreateTransportNotifyWithPostgreSQLPlatform()
     {
-        $driverConnection = $this->createMock(\Doctrine\DBAL\Connection::class);
-        $platform = $this->createMock(PostgreSQLPlatform::class);
+        $driverConnection = $this->createStub(\Doctrine\DBAL\Connection::class);
+        $platform = $this->createStub(PostgreSQLPlatform::class);
         $driverConnection->method('getDatabasePlatform')->willReturn($platform);
         $driverConnection->method('executeStatement')->willReturn(1);
         $registry = $this->createMock(ConnectionRegistry::class);
@@ -67,7 +67,7 @@ class DoctrineTransportFactoryTest extends TestCase
             ->willReturn($driverConnection);
 
         $factory = new DoctrineTransportFactory($registry);
-        $serializer = $this->createMock(SerializerInterface::class);
+        $serializer = $this->createStub(SerializerInterface::class);
 
         $this->assertEquals(
             new DoctrineTransport(new PostgreSqlConnection(PostgreSqlConnection::buildConfiguration('doctrine://default'), $driverConnection), $serializer),
@@ -87,6 +87,6 @@ class DoctrineTransportFactoryTest extends TestCase
             });
 
         $factory = new DoctrineTransportFactory($registry);
-        $factory->createTransport('doctrine://default', [], $this->createMock(SerializerInterface::class));
+        $factory->createTransport('doctrine://default', [], $this->createStub(SerializerInterface::class));
     }
 }
