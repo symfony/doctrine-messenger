@@ -30,7 +30,7 @@ class DoctrineSenderTest extends TestCase
         $connection = $this->createMock(Connection::class);
         $connection->expects($this->once())->method('send')->with($encoded['body'], $encoded['headers'])->willReturn('15');
 
-        $serializer = $this->createMock(SerializerInterface::class);
+        $serializer = $this->createStub(SerializerInterface::class);
         $serializer->method('encode')->with($envelope)->willReturn($encoded);
 
         $sender = new DoctrineSender($connection, $serializer);
@@ -50,7 +50,7 @@ class DoctrineSenderTest extends TestCase
         $connection = $this->createMock(Connection::class);
         $connection->expects($this->once())->method('send')->with($encoded['body'], $encoded['headers'], 500);
 
-        $serializer = $this->createMock(SerializerInterface::class);
+        $serializer = $this->createStub(SerializerInterface::class);
         $serializer->method('encode')->with($envelope)->willReturn($encoded);
 
         $sender = new DoctrineSender($connection, $serializer);
