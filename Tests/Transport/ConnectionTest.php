@@ -304,7 +304,7 @@ class ConnectionTest extends TestCase
     public function testKeepalive()
     {
         $queryBuilder = $this->getQueryBuilderMock();
-        $driverConnection = $this->getDBALConnection();
+        $driverConnection = $this->getDBALConnection(true);
 
         $connection = new Connection(['redeliver_timeout' => 30, 'table_name' => 'messenger_messages'], $driverConnection);
 
@@ -348,7 +348,7 @@ class ConnectionTest extends TestCase
     public function testKeepaliveRollback()
     {
         $queryBuilder = $this->getQueryBuilderMock();
-        $driverConnection = $this->getDBALConnection();
+        $driverConnection = $this->getDBALConnection(true);
 
         $connection = new Connection(['redeliver_timeout' => 30, 'table_name' => 'messenger_messages'], $driverConnection);
 
