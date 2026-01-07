@@ -349,14 +349,6 @@ class Connection implements ResetInterface
         $this->addTableToSchema($schema);
     }
 
-    /**
-     * @internal
-     */
-    public function getExtraSetupSqlForTable(Table $createdTable): array
-    {
-        return [];
-    }
-
     private function createAvailableMessagesQueryBuilder(): QueryBuilder
     {
         $now = new \DateTimeImmutable('UTC');

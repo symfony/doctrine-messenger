@@ -101,15 +101,4 @@ class PostgreSqlConnectionTest extends TestCase
 
         $this->assertSame(2, $wrappedConnection->countNotifyCalls());
     }
-
-    public function testGetExtraSetupSqlWrongTable()
-    {
-        $driverConnection = $this->createStub(Connection::class);
-        $driverConnection->method('executeStatement')->willReturn(1);
-        $connection = new PostgreSqlConnection(['table_name' => 'queue_table'], $driverConnection);
-
-        $table = new Table('queue_table');
-        // don't set the _symfony_messenger_table_name option
-        $this->assertSame([], $connection->getExtraSetupSqlForTable($table));
-    }
 }
