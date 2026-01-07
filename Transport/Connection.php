@@ -56,7 +56,6 @@ class Connection implements ResetInterface
     protected ?float $queueEmptiedAt = null;
 
     private bool $autoSetup;
-    private bool $doMysqlCleanup = false;
 
     /**
      * Constructor.
@@ -80,7 +79,6 @@ class Connection implements ResetInterface
     public function reset(): void
     {
         $this->queueEmptiedAt = null;
-        $this->doMysqlCleanup = false;
     }
 
     public function getConfiguration(): array
