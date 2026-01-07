@@ -458,23 +458,17 @@ class Connection implements ResetInterface
 
         try {
             if ($this->driverConnection->getDatabasePlatform() instanceof PostgreSQLPlatform) {
-                $first = $this->driverConnection->fetchFirstColumn($sql, $parameters, $types);
-
-                $id = $first[0] ?? null;
-
-                if (!$id) {
+                if (!$id = $this->driverConnection->fetchFirstColumn($sql, $parameters, $types)[0] ?? null) {
                     throw new TransportException('no id was returned by PostgreSQL from RETURNING clause.');
                 }
+
+                $this->driverConnection->executeStatement('SELECT pg_notify(?, ?)', [$this->configuration['table_name'], $this->configuration['queue_name']]);
             } elseif ($this->driverConnection->getDatabasePlatform() instanceof OraclePlatform) {
                 $sequenceName = $this->configuration['table_name'].self::ORACLE_SEQUENCES_SUFFIX;
 
                 $this->driverConnection->executeStatement($sql, $parameters, $types);
 
-                $result = $this->driverConnection->fetchOne('SELECT '.$sequenceName.'.CURRVAL FROM DUAL');
-
-                $id = (int) $result;
-
-                if (!$id) {
+                if (!$id = (int) $this->driverConnection->fetchOne('SELECT '.$sequenceName.'.CURRVAL FROM DUAL')) {
                     throw new TransportException('no id was returned by Oracle from sequence: '.$sequenceName);
                 }
             } else {
