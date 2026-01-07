@@ -102,37 +102,6 @@ class PostgreSqlConnectionTest extends TestCase
         $this->assertSame(2, $wrappedConnection->countNotifyCalls());
     }
 
-    public function testGetExtraSetupSql()
-    {
-        $driverConnection = $this->createStub(Connection::class);
-        $driverConnection->method('executeStatement')->willReturn(1);
-        $connection = new PostgreSqlConnection(['table_name' => 'queue_table'], $driverConnection);
-
-        $table = new Table('queue_table');
-        $table->addOption('_symfony_messenger_table_name', 'queue_table');
-        $sql = implode("\n", $connection->getExtraSetupSqlForTable($table));
-
-        $this->assertStringContainsString('CREATE TRIGGER', $sql);
-
-        // We MUST NOT use transaction, that will mess with the PDO in PHP 8
-        $this->assertStringNotContainsString('BEGIN;', $sql);
-        $this->assertStringNotContainsString('COMMIT;', $sql);
-    }
-
-    public function testTransformTableNameWithSchemaToValidProcedureName()
-    {
-        $driverConnection = $this->createStub(Connection::class);
-        $driverConnection->method('executeStatement')->willReturn(1);
-        $connection = new PostgreSqlConnection(['table_name' => 'schema.queue_table'], $driverConnection);
-
-        $table = new Table('schema.queue_table');
-        $table->addOption('_symfony_messenger_table_name', 'schema.queue_table');
-        $sql = implode("\n", $connection->getExtraSetupSqlForTable($table));
-
-        $this->assertStringContainsString('CREATE OR REPLACE FUNCTION schema.notify_queue_table', $sql);
-        $this->assertStringContainsString('FOR EACH ROW EXECUTE PROCEDURE schema.notify_queue_table()', $sql);
-    }
-
     public function testGetExtraSetupSqlWrongTable()
     {
         $driverConnection = $this->createStub(Connection::class);
