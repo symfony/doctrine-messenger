@@ -35,7 +35,7 @@ class DoctrineTransportFactory implements TransportFactoryInterface
      */
     public function createTransport(#[\SensitiveParameter] string $dsn, array $options, SerializerInterface $serializer): TransportInterface
     {
-        $useNotify = ($options['use_notify'] ?? true);
+        $useNotify = $options['use_notify'] ?? true;
         unset($options['transport_name'], $options['use_notify']);
         // Always allow PostgreSQL-specific keys, to be able to transparently fallback to the native driver when LISTEN/NOTIFY isn't available
         $configuration = PostgreSqlConnection::buildConfiguration($dsn, $options);

@@ -24,7 +24,7 @@ final class PostgreSqlConnection extends Connection
 {
     /**
      * * check_delayed_interval: The interval to check for delayed messages, in milliseconds. Set to 0 to disable checks. Default: 60000 (1 minute)
-     * * get_notify_timeout: The length of time to wait for a response when calling PDO::pgsqlGetNotify (or Pdo\Pgsql::getNotify on PHP 8.4+), in milliseconds. Default: 0.
+     * * get_notify_timeout: The time to wait for a message, in milliseconds. Default: 0, which means until check_delayed_interval is reached.
      */
     protected const DEFAULT_OPTIONS = parent::DEFAULT_OPTIONS + [
         'check_delayed_interval' => 60000,
@@ -64,16 +64,16 @@ final class PostgreSqlConnection extends Connection
 
         /** @var \PDO $nativeConnection */
         $nativeConnection = $this->driverConnection->getNativeConnection();
+        $timeout = $this->configuration['check_delayed_interval'] - (microtime(true) * 1000 - $this->queueEmptiedAt);
+        $timeout = max(0, ceil(min($this->configuration['get_notify_timeout'] ?: $timeout, $timeout)));
 
-        $notification = $nativeConnection->getNotify(\PDO::FETCH_ASSOC, $this->configuration['get_notify_timeout']);
+        $notification = $nativeConnection->getNotify(\PDO::FETCH_ASSOC, $timeout);
         if (
             // no notifications, or for another table or queue
             (false === $notification || $notification['message'] !== $this->configuration['table_name'] || $notification['payload'] !== $this->configuration['queue_name'])
             // delayed messages
             && (microtime(true) * 1000 - $this->queueEmptiedAt < $this->configuration['check_delayed_interval'])
         ) {
-            usleep(1000);
-
             return null;
         }
 
