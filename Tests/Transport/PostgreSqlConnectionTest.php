@@ -85,7 +85,7 @@ class PostgreSqlConnectionTest extends TestCase
             ->method('getNativeConnection')
             ->willReturn($wrappedConnection);
 
-        $driverResult = $this->createMock(DriverResult::class);
+        $driverResult = $this->createStub(DriverResult::class);
         $driverResult->method('fetchAssociative')
             ->willReturn(false);
         $driverConnection
