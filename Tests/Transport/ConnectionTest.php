@@ -337,7 +337,7 @@ class ConnectionTest extends TestCase
 
         $driverConnection->expects($this->once())
             ->method('executeStatement')
-            ->willThrowException($this->createMock(DBALException::class));
+            ->willThrowException($this->createStub(DBALException::class));
 
         $driverConnection->expects($this->never())
             ->method('commit');
@@ -778,7 +778,7 @@ class ConnectionTest extends TestCase
         $driverConnection->method('getDatabasePlatform')->willReturn(new OraclePlatform());
 
         // Mock the result returned by executeQuery to be an Oracle version 12.1.0 or higher.
-        $result = $this->createMock(Result::class);
+        $result = $this->createStub(Result::class);
         $result->method('fetchOne')->willReturn('12.1.0');
         $driverConnection->method('executeQuery')->willReturn($result);
 
