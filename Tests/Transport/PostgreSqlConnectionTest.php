@@ -119,7 +119,13 @@ class PostgreSqlConnectionTest extends TestCase
         $connection->get();
         $connection->get();
 
+        $this->assertTrue($connection->isListening());
+
         $this->assertSame(2, $wrappedConnection->countNotifyCalls());
+
+        $connection->__destruct();
+
+        $this->assertFalse($connection->isListening());
     }
 
     public function testGetExtraSetupSqlWrongTable()
@@ -131,5 +137,13 @@ class PostgreSqlConnectionTest extends TestCase
         $table = new Table('queue_table');
         // don't set the _symfony_messenger_table_name option
         $this->assertSame([], $connection->getExtraSetupSqlForTable($table));
+    }
+
+    public function testIsListeningReturnsFalseWhenGetHasNotBeenCalled()
+    {
+        $driverConnection = $this->createStub(\Doctrine\DBAL\Connection::class);
+        $connection = new PostgreSqlConnection(['table_name' => 'queue_table'], $driverConnection);
+
+        $this->assertFalse($connection->isListening());
     }
 }
