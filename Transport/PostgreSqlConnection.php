@@ -22,6 +22,8 @@ namespace Symfony\Component\Messenger\Bridge\Doctrine\Transport;
  */
 final class PostgreSqlConnection extends Connection
 {
+    private bool $listening = false;
+
     /**
      * * check_delayed_interval: The interval to check for delayed messages, in milliseconds. Set to 0 to disable checks. Default: 60000 (1 minute)
      * * get_notify_timeout: The time to wait for a message, in milliseconds. Default: 0, which means until check_delayed_interval is reached.
@@ -46,6 +48,11 @@ final class PostgreSqlConnection extends Connection
         $this->unlisten();
     }
 
+    public function isListening(): bool
+    {
+        return $this->listening;
+    }
+
     public function reset(): void
     {
         parent::reset();
@@ -61,6 +68,8 @@ final class PostgreSqlConnection extends Connection
         // This is secure because the table name must be a valid identifier:
         // https://www.postgresql.org/docs/current/sql-syntax-lexical.html#SQL-SYNTAX-IDENTIFIERS
         $this->executeStatement(\sprintf('LISTEN "%s"', $this->configuration['table_name']));
+
+        $this->listening = true;
 
         /** @var \PDO $nativeConnection */
         $nativeConnection = $this->driverConnection->getNativeConnection();
@@ -82,6 +91,11 @@ final class PostgreSqlConnection extends Connection
 
     private function unlisten(): void
     {
+        if (!$this->listening) {
+            return;
+        }
+
         $this->executeStatement(\sprintf('UNLISTEN "%s"', $this->configuration['table_name']));
+        $this->listening = false;
     }
 }

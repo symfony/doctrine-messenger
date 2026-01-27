@@ -98,6 +98,20 @@ class PostgreSqlConnectionTest extends TestCase
         $connection->get();
         $connection->get();
 
+        $this->assertTrue($connection->isListening());
+
         $this->assertSame(2, $wrappedConnection->countNotifyCalls());
+
+        $connection->__destruct();
+
+        $this->assertFalse($connection->isListening());
+    }
+
+    public function testIsListeningReturnsFalseWhenGetHasNotBeenCalled()
+    {
+        $driverConnection = $this->createStub(\Doctrine\DBAL\Connection::class);
+        $connection = new PostgreSqlConnection(['table_name' => 'queue_table'], $driverConnection);
+
+        $this->assertFalse($connection->isListening());
     }
 }
