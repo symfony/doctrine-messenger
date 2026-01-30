@@ -109,7 +109,7 @@ class PostgreSqlConnectionTest extends TestCase
 
     public function testIsListeningReturnsFalseWhenGetHasNotBeenCalled()
     {
-        $driverConnection = $this->createStub(\Doctrine\DBAL\Connection::class);
+        $driverConnection = $this->createStub(Connection::class);
         $connection = new PostgreSqlConnection(['table_name' => 'queue_table'], $driverConnection);
 
         $this->assertFalse($connection->isListening());
