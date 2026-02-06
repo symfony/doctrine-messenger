@@ -116,8 +116,8 @@ class DoctrineReceiverTest extends TestCase
 
         $doctrineEnvelope1 = $this->createDoctrineEnvelope();
         $doctrineEnvelope2 = $this->createDoctrineEnvelope();
-        $connection = $this->createStub(Connection::class);
-        $connection->method('findAll')->with(50)->willReturn([$doctrineEnvelope1, $doctrineEnvelope2]);
+        $connection = $this->createMock(Connection::class);
+        $connection->expects($this->once())->method('findAll')->with(50)->willReturn([$doctrineEnvelope1, $doctrineEnvelope2]);
 
         $receiver = new DoctrineReceiver($connection, $serializer);
         $actualEnvelopes = iterator_to_array($receiver->all(50));
@@ -131,8 +131,8 @@ class DoctrineReceiverTest extends TestCase
 
         $doctrineEnvelope1 = $this->createRetriedDoctrineEnvelope();
         $doctrineEnvelope2 = $this->createRetriedDoctrineEnvelope();
-        $connection = $this->createStub(Connection::class);
-        $connection->method('findAll')->willReturn([$doctrineEnvelope1, $doctrineEnvelope2]);
+        $connection = $this->createMock(Connection::class);
+        $connection->expects($this->once())->method('findAll')->willReturn([$doctrineEnvelope1, $doctrineEnvelope2]);
 
         $receiver = new DoctrineReceiver($connection, $serializer);
         $actualEnvelopes = $receiver->all();
@@ -148,8 +148,8 @@ class DoctrineReceiverTest extends TestCase
         $serializer = $this->createSerializer();
 
         $doctrineEnvelope = $this->createDoctrineEnvelope();
-        $connection = $this->createStub(Connection::class);
-        $connection->method('find')->with(10)->willReturn($doctrineEnvelope);
+        $connection = $this->createMock(Connection::class);
+        $connection->expects($this->once())->method('find')->with(10)->willReturn($doctrineEnvelope);
 
         $receiver = new DoctrineReceiver($connection, $serializer);
         $actualEnvelope = $receiver->find(10);
@@ -161,8 +161,8 @@ class DoctrineReceiverTest extends TestCase
         $serializer = $this->createSerializer();
 
         $doctrineEnvelope = $this->createRetriedDoctrineEnvelope();
-        $connection = $this->createStub(Connection::class);
-        $connection->method('find')->with(3)->willReturn($doctrineEnvelope);
+        $connection = $this->createMock(Connection::class);
+        $connection->expects($this->once())->method('find')->with(3)->willReturn($doctrineEnvelope);
 
         $receiver = new DoctrineReceiver($connection, $serializer);
         $actualEnvelope = $receiver->find(3);
