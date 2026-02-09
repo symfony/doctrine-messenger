@@ -50,6 +50,54 @@ class PostgreSqlConnectionTest extends TestCase
 
     public function testListenOnConnection()
     {
+        $driverConnection = $this->createStub(Connection::class);
+        $driverConnection->method('executeStatement')->willReturn(1);
+
+        $connection = new PostgreSqlConnection(['table_name' => 'queue_table'], $driverConnection);
+
+        $this->assertFalse($connection->isListening());
+
+        $connection->listen();
+
+        $this->assertTrue($connection->isListening());
+
+        $connection->__destruct();
+
+        $this->assertFalse($connection->isListening());
+    }
+
+    public function testWaitForNotifyCallsListenAndGetNotify()
+    {
+        $driverConnection = $this->createMock(Connection::class);
+        $driverConnection->method('executeStatement')->willReturn(1);
+
+        $wrappedConnection = new class {
+            public int $notifyCalls = 0;
+
+            public function getNotify()
+            {
+                ++$this->notifyCalls;
+
+                return false;
+            }
+        };
+
+        $driverConnection
+            ->expects(self::once())
+            ->method('getNativeConnection')
+            ->willReturn($wrappedConnection);
+
+        $connection = new PostgreSqlConnection(['table_name' => 'queue_table'], $driverConnection);
+
+        $result = $connection->waitForNotify(1000);
+
+        $this->assertFalse($result);
+        $this->assertTrue($connection->isListening());
+        $this->assertSame(1, $wrappedConnection->notifyCalls);
+    }
+
+    public function testGetBlocksOnNotifyWhenNoExternalListenerIsActive()
+    {
         $driverConnection = $this->createMock(Connection::class);
         $driverConnection->method('executeStatement')->willReturn(1);
 
@@ -64,18 +112,13 @@ class PostgreSqlConnectionTest extends TestCase
             ->willReturn(new QueryBuilder($driverConnection));
 
         $wrappedConnection = new class {
-            private int $notifyCalls = 0;
+            public int $notifyCalls = 0;
 
             public function getNotify()
             {
                 ++$this->notifyCalls;
 
                 return false;
-            }
-
-            public function countNotifyCalls()
-            {
-                return $this->notifyCalls;
             }
         };
 
@@ -94,17 +137,53 @@ class PostgreSqlConnectionTest extends TestCase
 
         $connection = new PostgreSqlConnection(['table_name' => 'queue_table'], $driverConnection);
 
-        $connection->get(); // first time we have queueEmptiedAt === null, fallback on the parent implementation
+        // first get(): queueEmptiedAt === null -> parent::get(), sets queueEmptiedAt
+        $connection->get();
+        // second/third get(): queueEmptiedAt !== null -> blocks on getNotify
         $connection->get();
         $connection->get();
 
         $this->assertTrue($connection->isListening());
+        $this->assertSame(2, $wrappedConnection->notifyCalls);
+    }
 
-        $this->assertSame(2, $wrappedConnection->countNotifyCalls());
+    public function testGetSkipsBlockingWhenListenCalledExternally()
+    {
+        $driverConnection = $this->createMock(Connection::class);
+        $driverConnection->method('executeStatement')->willReturn(1);
 
-        $connection->__destruct();
+        $driverConnection
+            ->expects(self::any())
+            ->method('getDatabasePlatform')
+            ->willReturn(new PostgreSQLPlatform());
 
-        $this->assertFalse($connection->isListening());
+        $driverConnection
+            ->expects(self::any())
+            ->method('createQueryBuilder')
+            ->willReturn(new QueryBuilder($driverConnection));
+
+        // getNativeConnection should never be called since blocking is skipped
+        $driverConnection
+            ->expects(self::never())
+            ->method('getNativeConnection');
+
+        $driverResult = $this->createStub(DriverResult::class);
+        $driverResult->method('fetchAssociative')
+            ->willReturn(false);
+        $driverConnection
+            ->expects(self::any())
+            ->method('executeQuery')
+            ->willReturn(new Result($driverResult, $driverConnection));
+
+        $connection = new PostgreSqlConnection(['table_name' => 'queue_table'], $driverConnection);
+
+        // External listener calls listen()
+        $connection->listen();
+
+        // get() should always delegate to parent without blocking
+        $connection->get();
+        $connection->get();
+        $connection->get();
     }
 
     public function testIsListeningReturnsFalseWhenGetHasNotBeenCalled()

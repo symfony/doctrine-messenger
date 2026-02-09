@@ -23,6 +23,7 @@ namespace Symfony\Component\Messenger\Bridge\Doctrine\Transport;
 final class PostgreSqlConnection extends Connection
 {
     private bool $listening = false;
+    private bool $notifyHandledExternally = false;
 
     /**
      * * check_delayed_interval: The interval to check for delayed messages, in milliseconds. Set to 0 to disable checks. Default: 60000 (1 minute)
@@ -61,9 +62,12 @@ final class PostgreSqlConnection extends Connection
 
     public function get(): ?array
     {
-        if (null === $this->queueEmptiedAt) {
+        if ($this->notifyHandledExternally || null === $this->queueEmptiedAt) {
             return parent::get();
         }
+
+        // Fallback: when no external listener handles LISTEN/NOTIFY,
+        // block here until a notification arrives or timeout expires
 
         // This is secure because the table name must be a valid identifier:
         // https://www.postgresql.org/docs/current/sql-syntax-lexical.html#SQL-SYNTAX-IDENTIFIERS
@@ -87,6 +91,42 @@ final class PostgreSqlConnection extends Connection
         }
 
         return parent::get();
+    }
+
+    /**
+     * Registers a LISTEN on the PostgreSQL connection for the configured table.
+     *
+     * When called, also disables the internal LISTEN/NOTIFY blocking in get(),
+     * assuming an external listener (e.g. PostgreSqlNotifyOnIdleListener) handles it.
+     *
+     * Safe to call multiple times; PostgreSQL ignores duplicate LISTEN for the same channel.
+     */
+    public function listen(): void
+    {
+        // This is secure because the table name must be a valid identifier:
+        // https://www.postgresql.org/docs/current/sql-syntax-lexical.html#SQL-SYNTAX-IDENTIFIERS
+        $this->executeStatement(\sprintf('LISTEN "%s"', $this->configuration['table_name']));
+        $this->listening = true;
+        $this->notifyHandledExternally = true;
+    }
+
+    /**
+     * Blocks until a PostgreSQL NOTIFY is received or the timeout expires.
+     *
+     * Automatically registers a LISTEN before waiting to handle reconnections.
+     *
+     * @param int $timeoutMs The maximum time to wait in milliseconds
+     *
+     * @return bool True if a notification was received, false on timeout
+     */
+    public function waitForNotify(int $timeoutMs): bool
+    {
+        $this->listen();
+
+        /** @var \PDO $nativeConnection */
+        $nativeConnection = $this->driverConnection->getNativeConnection();
+
+        return false !== $nativeConnection->getNotify(\PDO::FETCH_ASSOC, $timeoutMs);
     }
 
     private function unlisten(): void
