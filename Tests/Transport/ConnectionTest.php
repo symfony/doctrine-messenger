@@ -106,7 +106,7 @@ class ConnectionTest extends TestCase
 
     public function testGetWithSkipLockedWithForUpdateMethod()
     {
-        $queryBuilder = $this->getQueryBuilderStub();
+        $queryBuilder = $this->getQueryBuilderMock();
         $driverConnection = $this->getDBALConnection(true);
         $stmt = $this->getResultMock(false);
 
@@ -117,6 +117,7 @@ class ConnectionTest extends TestCase
             ->method('getParameterTypes')
             ->willReturn([]);
         $queryBuilder
+            ->expects($this->once())
             ->method('forUpdate')
             ->with(ConflictResolutionMode::SKIP_LOCKED)
             ->willReturn($queryBuilder);
@@ -528,7 +529,7 @@ class ConnectionTest extends TestCase
 
     public function testFind()
     {
-        $queryBuilder = $this->getQueryBuilderStub();
+        $queryBuilder = $this->getQueryBuilderMock();
         $driverConnection = $this->getDBALConnection();
         $id = 1;
         $stmt = $this->getResultMock([
@@ -541,6 +542,7 @@ class ConnectionTest extends TestCase
             ->method('createQueryBuilder')
             ->willReturn($queryBuilder);
         $queryBuilder
+            ->expects($this->once())
             ->method('where')
             ->with('m.id = ? and m.queue_name = ?')
             ->willReturn($queryBuilder);
