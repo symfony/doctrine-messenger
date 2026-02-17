@@ -55,12 +55,10 @@ class PostgreSqlConnectionTest extends TestCase
         $driverConnection->method('executeStatement')->willReturn(1);
 
         $driverConnection
-            ->expects(self::any())
             ->method('getDatabasePlatform')
             ->willReturn(new PostgreSQLPlatform());
 
         $driverConnection
-            ->expects(self::any())
             ->method('createQueryBuilder')
             ->willReturn(new QueryBuilder($driverConnection));
 
@@ -89,7 +87,6 @@ class PostgreSqlConnectionTest extends TestCase
         $driverResult->method('fetchAssociative')
             ->willReturn(false);
         $driverConnection
-            ->expects(self::any())
             ->method('executeQuery')
             ->willReturn(new Result($driverResult, $driverConnection));
 
