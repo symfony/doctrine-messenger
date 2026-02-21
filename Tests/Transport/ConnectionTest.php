@@ -131,7 +131,7 @@ class ConnectionTest extends TestCase
             ->method('update');
         $driverConnection
             ->method('executeQuery')
-            ->willReturnCallback(static function (string $sql) use ($stmt) {
+            ->willReturnCallback(function (string $sql) use ($stmt) {
                 $this->assertStringContainsString('SKIP LOCKED', $sql);
 
                 return $stmt;
