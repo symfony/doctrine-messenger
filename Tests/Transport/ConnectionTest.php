@@ -131,8 +131,12 @@ class ConnectionTest extends TestCase
             ->method('update');
         $driverConnection
             ->method('executeQuery')
-            ->with($this->callback(static fn ($sql) => str_contains($sql, 'SKIP LOCKED')))
-            ->willReturn($stmt);
+            ->willReturnCallback(static function (string $sql) use ($stmt) {
+                $this->assertStringContainsString('SKIP LOCKED', $sql);
+
+                return $stmt;
+            })
+        ;
 
         $connection = new Connection(['skip_locked' => true], $driverConnection);
         $doctrineEnvelope = $connection->get();
