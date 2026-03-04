@@ -13,9 +13,8 @@ namespace Symfony\Component\Messenger\Bridge\Doctrine\EventListener;
 
 use Doctrine\DBAL\ArrayParameterType;
 use Doctrine\DBAL\Types\Types;
+use Psr\Clock\ClockInterface;
 use Psr\Log\LoggerInterface;
-use Symfony\Component\Clock\Clock;
-use Symfony\Component\Clock\ClockInterface;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 use Symfony\Component\Messenger\Bridge\Doctrine\Transport\PostgreSqlConnection;
 use Symfony\Component\Messenger\Event\WorkerRunningEvent;
@@ -40,7 +39,7 @@ class PostgreSqlNotifyOnIdleListener implements EventSubscriberInterface
 
     public function __construct(
         private ?LoggerInterface $logger = null,
-        private ClockInterface $clock = new Clock(),
+        private ?ClockInterface $clock = null,
     ) {
     }
 
@@ -98,10 +97,12 @@ class PostgreSqlNotifyOnIdleListener implements EventSubscriberInterface
             return;
         }
 
+        $now = $this->clock?->now()->format('U.u') ?? microtime(true);
+
         // Cap by worker deadline (--time-limit) — checked first to avoid a SQL query
         // in getEarliestDelayedMessageTime() when the worker is already past its deadline.
         if (null !== $this->deadline) {
-            $deadline = ($this->deadline - $this->clock->now()->format('U.u')) * 1000;
+            $deadline = ($this->deadline - $now) * 1000;
             if (0 >= $timeout = min($timeout, $deadline)) {
                 return;
             }
@@ -109,8 +110,7 @@ class PostgreSqlNotifyOnIdleListener implements EventSubscriberInterface
 
         // Cap by earliest delayed message across all PG queues: wake up in time to process it
         if (null !== $earliest = $this->getEarliestDelayedMessageTime()) {
-            $now = $this->clock->now();
-            $msUntilEarliest = ($earliest->format('U.u') - $now->format('U.u')) * 1000;
+            $msUntilEarliest = ($earliest->format('U.u') - $now) * 1000;
             if (0 >= $timeout = min($timeout, $msUntilEarliest)) {
                 return;
             }
@@ -171,12 +171,11 @@ class PostgreSqlNotifyOnIdleListener implements EventSubscriberInterface
     {
         $config = $this->activeConnection->getConfiguration();
         $dbal = $this->activeConnection->getDriverConnection();
-        $now = $this->clock->now();
 
         $sql = \sprintf('SELECT MIN(available_at) FROM %s WHERE queue_name IN (?) AND available_at > ? AND delivered_at IS NULL', $config['table_name']);
         $result = $dbal->executeQuery($sql, [
             $this->queueNames,
-            $now,
+            $this->clock?->now() ?? new \DateTimeImmutable(),
         ], [
             ArrayParameterType::STRING,
             Types::DATETIME_IMMUTABLE,
