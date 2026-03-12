@@ -149,6 +149,9 @@ class DoctrineReceiver implements ListableReceiverInterface, MessageCountAwareIn
         }
     }
 
+    /**
+     * @param-immediately-invoked-callable $callable
+     */
     private function withRetryableExceptionRetry(callable $callable): void
     {
         $delay = 100;

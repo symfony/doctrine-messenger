@@ -352,6 +352,8 @@ class Connection implements ResetInterface
 
     /**
      * @internal
+     *
+     * @param-immediately-invoked-callable $isSameDatabase
      */
     public function configureSchema(Schema $schema, DBALConnection $forConnection, \Closure $isSameDatabase): void
     {
