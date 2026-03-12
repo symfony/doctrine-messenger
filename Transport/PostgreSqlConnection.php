@@ -62,10 +62,10 @@ final class PostgreSqlConnection extends Connection
         $this->unlisten();
     }
 
-    public function get(): ?array
+    public function get(int $fetchSize = 1): ?array
     {
         if ($this->notifyHandledExternally || null === $this->queueEmptiedAt) {
-            return parent::get();
+            return parent::get($fetchSize);
         }
 
         // Fallback: when no external listener handles LISTEN/NOTIFY,
@@ -92,7 +92,7 @@ final class PostgreSqlConnection extends Connection
             return null;
         }
 
-        return parent::get();
+        return parent::get($fetchSize);
     }
 
     /**

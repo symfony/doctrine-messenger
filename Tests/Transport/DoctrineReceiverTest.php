@@ -38,7 +38,7 @@ class DoctrineReceiverTest extends TestCase
 
         $doctrineEnvelope = $this->createDoctrineEnvelope();
         $connection = $this->createStub(Connection::class);
-        $connection->method('get')->willReturn($doctrineEnvelope);
+        $connection->method('get')->willReturn([$doctrineEnvelope]);
 
         $receiver = new DoctrineReceiver($connection, $serializer);
         $actualEnvelopes = $receiver->get();
@@ -65,7 +65,7 @@ class DoctrineReceiverTest extends TestCase
 
         $doctrineEnvelop = $this->createDoctrineEnvelope();
         $connection = $this->createStub(Connection::class);
-        $connection->method('get')->willReturn($doctrineEnvelop);
+        $connection->method('get')->willReturn([$doctrineEnvelop]);
 
         $receiver = new DoctrineReceiver($connection, $serializer);
         $envelopes = $receiver->get();
@@ -100,7 +100,7 @@ class DoctrineReceiverTest extends TestCase
 
         $doctrineEnvelope = $this->createRetriedDoctrineEnvelope();
         $connection = $this->createStub(Connection::class);
-        $connection->method('get')->willReturn($doctrineEnvelope);
+        $connection->method('get')->willReturn([$doctrineEnvelope]);
 
         $receiver = new DoctrineReceiver($connection, $serializer);
         $actualEnvelopes = $receiver->get();
@@ -109,6 +109,20 @@ class DoctrineReceiverTest extends TestCase
         $messageIdStamps = $actualEnvelope->all(TransportMessageIdStamp::class);
 
         $this->assertCount(1, $messageIdStamps);
+    }
+
+    public function testGetUsesFetchSizeWhenProvided()
+    {
+        $serializer = $this->createSerializer();
+
+        $doctrineEnvelope = $this->createDoctrineEnvelope();
+        $connection = $this->createMock(Connection::class);
+        $connection->expects($this->once())->method('get')->with(7)->willReturn([$doctrineEnvelope]);
+
+        $receiver = new DoctrineReceiver($connection, $serializer);
+        $actualEnvelopes = $receiver->get(7);
+
+        $this->assertCount(1, $actualEnvelopes);
     }
 
     public function testAll()

@@ -40,10 +40,15 @@ class DoctrineReceiver implements ListableReceiverInterface, MessageCountAwareIn
         $this->serializer = $serializer ?? new PhpSerializer();
     }
 
-    public function get(): iterable
+    /**
+     * @param int $fetchSize
+     */
+    public function get(/* int $fetchSize = 1 */): iterable
     {
+        $fetchSize = \func_num_args() > 0 ? max(1, func_get_arg(0)) : 1;
+
         try {
-            $doctrineEnvelope = $this->connection->get();
+            $doctrineEnvelopes = $this->connection->get($fetchSize);
             $this->retryingSafetyCounter = 0; // reset counter
         } catch (RetryableException $exception) {
             // Do nothing when RetryableException occurs less than "MAX_RETRIES"
@@ -59,11 +64,11 @@ class DoctrineReceiver implements ListableReceiverInterface, MessageCountAwareIn
             throw new TransportException($exception->getMessage(), 0, $exception);
         }
 
-        if (null === $doctrineEnvelope) {
+        if (null === $doctrineEnvelopes) {
             return [];
         }
 
-        return [$this->createEnvelopeFromData($doctrineEnvelope)];
+        return array_map($this->createEnvelopeFromData(...), $doctrineEnvelopes);
     }
 
     public function ack(Envelope $envelope): void
