@@ -630,9 +630,7 @@ class ConnectionTest extends TestCase
         $driverConnection
             ->expects($this->once())
             ->method('executeQuery')
-            ->with($this->callback(static function ($sql) use ($expectedSql) {
-                return trim($expectedSql) === trim($sql);
-            }))
+            ->with($this->callback(static fn ($sql) => trim($expectedSql) === trim($sql)))
             ->willReturn($result)
         ;
         $driverConnection->expects($this->once())->method('commit');
@@ -735,9 +733,7 @@ class ConnectionTest extends TestCase
     {
         $driverConnection = $this->createMock(DBALConnection::class);
         $driverConnection->method('getDatabasePlatform')->willReturn($platform);
-        $driverConnection->method('createQueryBuilder')->willReturnCallback(static function () use ($driverConnection) {
-            return new QueryBuilder($driverConnection);
-        });
+        $driverConnection->method('createQueryBuilder')->willReturnCallback(static fn () => new QueryBuilder($driverConnection));
 
         $result = $this->createStub(Result::class);
         $result->method('fetchAllAssociative')->willReturn([]);
