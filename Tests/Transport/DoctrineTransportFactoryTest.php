@@ -103,7 +103,7 @@ class DoctrineTransportFactoryTest extends TestCase
         $registry = $this->createMock(ConnectionRegistry::class);
         $registry->expects($this->once())
             ->method('getConnection')
-            ->willReturnCallback(function () {
+            ->willReturnCallback(static function () {
                 throw new \InvalidArgumentException();
             });
 
