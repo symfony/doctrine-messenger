@@ -621,7 +621,7 @@ class ConnectionTest extends TestCase
     {
         $driverConnection = $this->createMock(DBALConnection::class);
         $driverConnection->method('getDatabasePlatform')->willReturn($platform);
-        $driverConnection->method('createQueryBuilder')->willReturnCallback(fn () => new QueryBuilder($driverConnection));
+        $driverConnection->method('createQueryBuilder')->willReturnCallback(static fn () => new QueryBuilder($driverConnection));
 
         $result = $this->createStub(Result::class);
         $result->method('fetchAssociative')->willReturn(false);
@@ -630,7 +630,7 @@ class ConnectionTest extends TestCase
         $driverConnection
             ->expects($this->once())
             ->method('executeQuery')
-            ->with($this->callback(function ($sql) use ($expectedSql) {
+            ->with($this->callback(static function ($sql) use ($expectedSql) {
                 return trim($expectedSql) === trim($sql);
             }))
             ->willReturn($result)
@@ -687,7 +687,7 @@ class ConnectionTest extends TestCase
         $schema = new Schema();
 
         $connection = new Connection(['table_name' => 'queue_table'], $driverConnection);
-        $connection->configureSchema($schema, $driverConnection, fn () => true);
+        $connection->configureSchema($schema, $driverConnection, static fn () => true);
         $this->assertTrue($schema->hasTable('queue_table'));
 
         // Ensure the covering index for the SELECT query exists
@@ -714,7 +714,7 @@ class ConnectionTest extends TestCase
         $schema = new Schema();
 
         $connection = new Connection([], $driverConnection);
-        $connection->configureSchema($schema, $driverConnection2, fn () => false);
+        $connection->configureSchema($schema, $driverConnection2, static fn () => false);
         $this->assertFalse($schema->hasTable('messenger_messages'));
     }
 
@@ -725,7 +725,7 @@ class ConnectionTest extends TestCase
         $schema->createTable('messenger_messages');
 
         $connection = new Connection([], $driverConnection);
-        $connection->configureSchema($schema, $driverConnection, fn () => true);
+        $connection->configureSchema($schema, $driverConnection, static fn () => true);
         $table = $schema->getTable('messenger_messages');
         $this->assertSame([], $table->getColumns(), 'The table was not overwritten');
     }
@@ -735,7 +735,7 @@ class ConnectionTest extends TestCase
     {
         $driverConnection = $this->createMock(DBALConnection::class);
         $driverConnection->method('getDatabasePlatform')->willReturn($platform);
-        $driverConnection->method('createQueryBuilder')->willReturnCallback(function () use ($driverConnection) {
+        $driverConnection->method('createQueryBuilder')->willReturnCallback(static function () use ($driverConnection) {
             return new QueryBuilder($driverConnection);
         });
 
@@ -789,7 +789,7 @@ class ConnectionTest extends TestCase
         $schema = new Schema();
 
         $connection = new Connection(['table_name' => 'messenger_messages'], $driverConnection);
-        $connection->configureSchema($schema, $driverConnection, fn () => true);
+        $connection->configureSchema($schema, $driverConnection, static fn () => true);
 
         $expectedSuffix = '_seq';
         $sequences = $schema->getSequences();
