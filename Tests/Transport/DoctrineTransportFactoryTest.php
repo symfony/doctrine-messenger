@@ -90,3 +90,5 @@ class DoctrineTransportFactoryTest extends TestCase
         $factory->createTransport('doctrine://default', [], $this->createStub(SerializerInterface::class));
     }
 }
+
+// @php-cs-fixer-ignore fully_qualified_strict_types
