@@ -58,6 +58,7 @@ class PostgreSqlNotifyOnIdleListener implements EventSubscriberInterface
     {
         $this->activeConnection = null;
         $this->deadline = $event->getDeadline();
+        $this->queueNames = [];
 
         $allTransportNames = $event->getWorker()->getMetadata()->getTransportNames();
 
