@@ -18,6 +18,7 @@ use Doctrine\DBAL\Schema\AbstractSchemaManager;
 use Doctrine\DBAL\Schema\DefaultSchemaManagerFactory;
 use Doctrine\DBAL\Tools\DsnParser;
 use PHPUnit\Framework\Attributes\Group;
+use PHPUnit\Framework\Attributes\IgnoreDeprecations;
 use PHPUnit\Framework\Attributes\RequiresPhpExtension;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Messenger\Bridge\Doctrine\Tests\Fixtures\DummyMessage;
@@ -28,6 +29,8 @@ use Symfony\Component\Messenger\Bridge\Doctrine\Transport\PostgreSqlConnection;
  */
 #[RequiresPhpExtension('pdo_pgsql')]
 #[Group('integration')]
+#[IgnoreDeprecations]
+#[Group('doctrine-dbal-workaround')]
 class DoctrinePostgreSqlPgbouncerIntegrationTest extends TestCase
 {
     private Connection $driverConnection;
