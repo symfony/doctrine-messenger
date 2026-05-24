@@ -15,12 +15,16 @@ use Doctrine\DBAL\Configuration;
 use Doctrine\DBAL\DriverManager;
 use Doctrine\DBAL\Schema\DefaultSchemaManagerFactory;
 use Doctrine\DBAL\Tools\DsnParser;
+use PHPUnit\Framework\Attributes\Group;
+use PHPUnit\Framework\Attributes\IgnoreDeprecations;
 use PHPUnit\Framework\Attributes\RequiresPhpExtension;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Messenger\Bridge\Doctrine\Tests\Fixtures\DummyMessage;
 use Symfony\Component\Messenger\Bridge\Doctrine\Transport\Connection;
 
 #[RequiresPhpExtension('pdo_sqlite')]
+#[IgnoreDeprecations]
+#[Group('doctrine-dbal-workaround')]
 class DoctrineIntegrationTest extends TestCase
 {
     private \Doctrine\DBAL\Connection $driverConnection;
