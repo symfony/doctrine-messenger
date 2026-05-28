@@ -89,9 +89,9 @@ class DoctrineTransport implements TransportInterface, SetupableTransportInterfa
     /**
      * Adds the Table to the Schema if this transport uses this connection.
      */
-    public function configureSchema(Schema $schema, DbalConnection $forConnection, \Closure $isSameDatabase): void
+    public function configureSchema(Schema $schema, DbalConnection $forConnection, \Closure $isSameDatabase): Schema
     {
-        $this->connection->configureSchema($schema, $forConnection, $isSameDatabase);
+        return $this->connection->configureSchema($schema, $forConnection, $isSameDatabase);
     }
 
     /**
