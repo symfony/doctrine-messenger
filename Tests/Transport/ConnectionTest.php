@@ -33,8 +33,6 @@ use Doctrine\DBAL\Schema\NamedObject;
 use Doctrine\DBAL\Schema\Schema;
 use Doctrine\DBAL\Schema\SchemaConfig;
 use PHPUnit\Framework\Attributes\DataProvider;
-use PHPUnit\Framework\Attributes\Group;
-use PHPUnit\Framework\Attributes\IgnoreDeprecations;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Messenger\Bridge\Doctrine\Tests\Fixtures\DummyMessage;
@@ -42,8 +40,6 @@ use Symfony\Component\Messenger\Bridge\Doctrine\Transport\Connection;
 use Symfony\Component\Messenger\Exception\InvalidArgumentException;
 use Symfony\Component\Messenger\Exception\TransportException;
 
-#[IgnoreDeprecations]
-#[Group('doctrine-dbal-workaround')]
 class ConnectionTest extends TestCase
 {
     public function testGetAMessageWillChangeItsStatus()
@@ -796,10 +792,9 @@ class ConnectionTest extends TestCase
     public function testConfigureSchema()
     {
         $driverConnection = $this->getDBALConnection();
-        $schema = new Schema();
 
         $connection = new Connection(['table_name' => 'queue_table'], $driverConnection);
-        $connection->configureSchema($schema, $driverConnection, static fn () => true);
+        $schema = $connection->configureSchema(new Schema(), $driverConnection, static fn () => true);
         $this->assertTrue($schema->hasTable('queue_table'));
 
         // Ensure the covering index for the SELECT query exists
@@ -823,21 +818,24 @@ class ConnectionTest extends TestCase
     {
         $driverConnection = $this->getDBALConnection();
         $driverConnection2 = $this->getDBALConnection();
-        $schema = new Schema();
 
         $connection = new Connection([], $driverConnection);
-        $connection->configureSchema($schema, $driverConnection2, static fn () => false);
+        $schema = $connection->configureSchema(new Schema(), $driverConnection2, static fn () => false);
         $this->assertFalse($schema->hasTable('messenger_messages'));
     }
 
     public function testConfigureSchemaTableExists()
     {
         $driverConnection = $this->getDBALConnection();
-        $schema = new Schema();
-        $schema->createTable('messenger_messages');
+        if (method_exists(Schema::class, 'edit')) {
+            $schema = (new Schema())->edit()->addTable(new \Doctrine\DBAL\Schema\Table('messenger_messages'))->create();
+        } else {
+            $schema = new Schema();
+            $schema->createTable('messenger_messages');
+        }
 
         $connection = new Connection([], $driverConnection);
-        $connection->configureSchema($schema, $driverConnection, static fn () => true);
+        $schema = $connection->configureSchema($schema, $driverConnection, static fn () => true);
         $table = $schema->getTable('messenger_messages');
         $this->assertSame([], $table->getColumns(), 'The table was not overwritten');
     }
@@ -905,10 +903,8 @@ class ConnectionTest extends TestCase
         $result->method('fetchOne')->willReturn('12.1.0');
         $driverConnection->method('executeQuery')->willReturn($result);
 
-        $schema = new Schema();
-
         $connection = new Connection(['table_name' => 'messenger_messages'], $driverConnection);
-        $connection->configureSchema($schema, $driverConnection, static fn () => true);
+        $schema = $connection->configureSchema(new Schema(), $driverConnection, static fn () => true);
 
         $expectedSuffix = '_seq';
         $sequences = $schema->getSequences();
