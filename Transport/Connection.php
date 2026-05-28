@@ -336,10 +336,8 @@ class Connection implements ResetInterface
 
     /**
      * @internal
-     *
-     * @return Schema The (possibly new) schema with the table added
      */
-    public function configureSchema(Schema $schema, DBALConnection $forConnection, \Closure $isSameDatabase)
+    public function configureSchema(Schema $schema, DBALConnection $forConnection, \Closure $isSameDatabase): Schema
     {
         if ($schema->hasTable($this->configuration['table_name'])) {
             return $schema;
@@ -531,22 +529,14 @@ class Connection implements ResetInterface
     {
         // add an internal option to mark that we created this & the non-namespaced table name
         $table->addOption(self::TABLE_OPTION_NAME, $this->configuration['table_name']);
-        $idColumn = $table->addColumn('id', Types::BIGINT)
-            ->setAutoincrement(true)
-            ->setNotnull(true);
-        $table->addColumn('body', Types::TEXT)
-            ->setNotnull(true);
-        $table->addColumn('headers', Types::TEXT)
-            ->setNotnull(true);
-        $table->addColumn('queue_name', Types::STRING)
-            ->setLength(190) // MySQL 5.6 only supports 191 characters on an indexed column in utf8mb4 mode
-            ->setNotnull(true);
-        $table->addColumn('created_at', Types::DATETIME_IMMUTABLE)
-            ->setNotnull(true);
-        $table->addColumn('available_at', Types::DATETIME_IMMUTABLE)
-            ->setNotnull(true);
-        $table->addColumn('delivered_at', Types::DATETIME_IMMUTABLE)
-            ->setNotnull(false);
+        $table->addColumn('id', Types::BIGINT, $idOptions);
+        $table->addColumn('body', Types::TEXT, ['notnull' => true]);
+        $table->addColumn('headers', Types::TEXT, ['notnull' => true]);
+        // MySQL 5.6 only supports 191 characters on an indexed column in utf8mb4 mode
+        $table->addColumn('queue_name', Types::STRING, ['length' => 190, 'notnull' => true]);
+        $table->addColumn('created_at', Types::DATETIME_IMMUTABLE, ['notnull' => true]);
+        $table->addColumn('available_at', Types::DATETIME_IMMUTABLE, ['notnull' => true]);
+        $table->addColumn('delivered_at', Types::DATETIME_IMMUTABLE, ['notnull' => false]);
         $table->addPrimaryKeyConstraint(new PrimaryKeyConstraint(null, [new UnqualifiedName(Identifier::unquoted('id'))], true));
         $table->addIndex(['queue_name', 'available_at', 'delivered_at', 'id']);
     }
