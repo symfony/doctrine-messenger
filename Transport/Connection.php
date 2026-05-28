@@ -26,6 +26,7 @@ use Doctrine\DBAL\Schema\Name\UnqualifiedName;
 use Doctrine\DBAL\Schema\NamedObject;
 use Doctrine\DBAL\Schema\PrimaryKeyConstraint;
 use Doctrine\DBAL\Schema\Schema;
+use Doctrine\DBAL\Schema\Sequence;
 use Doctrine\DBAL\Schema\Table;
 use Doctrine\DBAL\Types\Types;
 use Satag\DoctrineFirebirdDriver\Platforms\FirebirdPlatform;
@@ -335,18 +336,20 @@ class Connection implements ResetInterface
 
     /**
      * @internal
+     *
+     * @return Schema The (possibly new) schema with the table added
      */
-    public function configureSchema(Schema $schema, DBALConnection $forConnection, \Closure $isSameDatabase): void
+    public function configureSchema(Schema $schema, DBALConnection $forConnection, \Closure $isSameDatabase)
     {
         if ($schema->hasTable($this->configuration['table_name'])) {
-            return;
+            return $schema;
         }
 
         if ($forConnection !== $this->driverConnection && !$isSameDatabase($this->executeStatement(...))) {
-            return;
+            return $schema;
         }
 
-        $this->addTableToSchema($schema);
+        return $this->addTableToSchema($schema);
     }
 
     /**
@@ -482,15 +485,50 @@ class Connection implements ResetInterface
 
     private function getSchema(): Schema
     {
-        $schema = new Schema([], [], $this->driverConnection->createSchemaManager()->createSchemaConfig());
-        $this->addTableToSchema($schema);
+        return $this->addTableToSchema(new Schema([], [], $this->driverConnection->createSchemaManager()->createSchemaConfig()));
+    }
+
+    private function addTableToSchema(Schema $schema): Schema
+    {
+        $oracleSequenceName = null;
+        $idOptions = ['autoincrement' => true, 'notnull' => true];
+
+        // We need to create a sequence for Oracle and set the id column to get the correct nextval
+        if ($this->driverConnection->getDatabasePlatform() instanceof OraclePlatform) {
+            $serverVersion = $this->driverConnection->executeQuery("SELECT version FROM product_component_version WHERE product LIKE 'Oracle Database%'")->fetchOne();
+            if (version_compare($serverVersion, '12.1.0', '>=')) {
+                $oracleSequenceName = $this->configuration['table_name'].self::ORACLE_SEQUENCES_SUFFIX;
+                // disable the creation of SEQUENCE and TRIGGER, use the sequence's nextval as default instead
+                $idOptions = ['autoincrement' => false, 'notnull' => true, 'default' => $oracleSequenceName.'.nextval'];
+            }
+        }
+
+        if (method_exists($schema, 'edit')) {
+            $table = new Table($this->configuration['table_name']);
+            $this->configureSchemaTable($table, $idOptions);
+
+            $editor = $schema->edit()->addTable($table);
+            if (null !== $oracleSequenceName) {
+                $editor->addSequence(new Sequence($oracleSequenceName));
+            }
+
+            return $editor->create();
+        }
+
+        $this->configureSchemaTable($schema->createTable($this->configuration['table_name']), $idOptions);
+
+        if (null !== $oracleSequenceName) {
+            $schema->createSequence($oracleSequenceName);
+        }
 
         return $schema;
     }
 
-    private function addTableToSchema(Schema $schema): void
+    /**
+     * @param array<string, mixed> $idOptions
+     */
+    private function configureSchemaTable(Table $table, array $idOptions): void
     {
-        $table = $schema->createTable($this->configuration['table_name']);
         // add an internal option to mark that we created this & the non-namespaced table name
         $table->addOption(self::TABLE_OPTION_NAME, $this->configuration['table_name']);
         $idColumn = $table->addColumn('id', Types::BIGINT)
@@ -511,17 +549,6 @@ class Connection implements ResetInterface
             ->setNotnull(false);
         $table->addPrimaryKeyConstraint(new PrimaryKeyConstraint(null, [new UnqualifiedName(Identifier::unquoted('id'))], true));
         $table->addIndex(['queue_name', 'available_at', 'delivered_at', 'id']);
-
-        // We need to create a sequence for Oracle and set the id column to get the correct nextval
-        if ($this->driverConnection->getDatabasePlatform() instanceof OraclePlatform) {
-            $serverVersion = $this->driverConnection->executeQuery("SELECT version FROM product_component_version WHERE product LIKE 'Oracle Database%'")->fetchOne();
-            if (version_compare($serverVersion, '12.1.0', '>=')) {
-                $idColumn->setAutoincrement(false); // disable the creation of SEQUENCE and TRIGGER
-                $idColumn->setDefault($this->configuration['table_name'].self::ORACLE_SEQUENCES_SUFFIX.'.nextval');
-
-                $schema->createSequence($this->configuration['table_name'].self::ORACLE_SEQUENCES_SUFFIX);
-            }
-        }
     }
 
     private function decodeEnvelopeHeaders(array $doctrineEnvelope): array
