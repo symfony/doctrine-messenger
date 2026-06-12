@@ -20,7 +20,9 @@ use Doctrine\DBAL\Query\ForUpdate\ConflictResolutionMode;
 use Doctrine\DBAL\Query\QueryBuilder;
 use Doctrine\DBAL\Result;
 use Doctrine\DBAL\Schema\AbstractAsset;
+use Doctrine\DBAL\Schema\Column;
 use Doctrine\DBAL\Schema\ComparatorConfig;
+use Doctrine\DBAL\Schema\Index;
 use Doctrine\DBAL\Schema\Name\Identifier;
 use Doctrine\DBAL\Schema\Name\UnqualifiedName;
 use Doctrine\DBAL\Schema\NamedObject;
@@ -502,10 +504,7 @@ class Connection implements ResetInterface
         }
 
         if (method_exists($schema, 'edit')) {
-            $table = new Table($this->configuration['table_name']);
-            $this->configureSchemaTable($table, $idOptions);
-
-            $editor = $schema->edit()->addTable($table);
+            $editor = $schema->edit()->addTable($this->buildSchemaTable($oracleSequenceName));
             if (null !== $oracleSequenceName) {
                 $editor->addSequence(new Sequence($oracleSequenceName));
             }
@@ -522,7 +521,37 @@ class Connection implements ResetInterface
         return $schema;
     }
 
+    private function buildSchemaTable(?string $oracleSequenceName): Table
+    {
+        $idEditor = Column::editor()->setUnquotedName('id')->setTypeName(Types::BIGINT)->setNotNull(true);
+
+        if (null !== $oracleSequenceName) {
+            // disable the creation of SEQUENCE and TRIGGER, use the sequence's nextval as default instead
+            $idEditor->setAutoincrement(false)->setDefaultValue($oracleSequenceName.'.nextval');
+        } else {
+            $idEditor->setAutoincrement(true);
+        }
+
+        return Table::editor()
+            ->setUnquotedName($this->configuration['table_name'])
+            // add an internal option to mark that we created this & the non-namespaced table name
+            ->setOptions([self::TABLE_OPTION_NAME => $this->configuration['table_name']])
+            ->addColumn($idEditor->create())
+            ->addColumn(Column::editor()->setUnquotedName('body')->setTypeName(Types::TEXT)->setNotNull(true)->create())
+            ->addColumn(Column::editor()->setUnquotedName('headers')->setTypeName(Types::TEXT)->setNotNull(true)->create())
+            // MySQL 5.6 only supports 191 characters on an indexed column in utf8mb4 mode
+            ->addColumn(Column::editor()->setUnquotedName('queue_name')->setTypeName(Types::STRING)->setLength(190)->setNotNull(true)->create())
+            ->addColumn(Column::editor()->setUnquotedName('created_at')->setTypeName(Types::DATETIME_IMMUTABLE)->setNotNull(true)->create())
+            ->addColumn(Column::editor()->setUnquotedName('available_at')->setTypeName(Types::DATETIME_IMMUTABLE)->setNotNull(true)->create())
+            ->addColumn(Column::editor()->setUnquotedName('delivered_at')->setTypeName(Types::DATETIME_IMMUTABLE)->setNotNull(false)->create())
+            ->addPrimaryKeyConstraint(new PrimaryKeyConstraint(null, [new UnqualifiedName(Identifier::unquoted('id'))], true))
+            ->addIndex(Index::editor()->setUnquotedColumnNames('queue_name', 'available_at', 'delivered_at', 'id'))
+            ->create();
+    }
+
     /**
+     * To be removed when doctrine/dbal minimum is bumped to ^4.5.
+     *
      * @param array<string, mixed> $idOptions
      */
     private function configureSchemaTable(Table $table, array $idOptions): void
