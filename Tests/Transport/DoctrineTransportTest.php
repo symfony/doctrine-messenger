@@ -62,11 +62,12 @@ class DoctrineTransportTest extends TestCase
         $schema = new Schema();
         $dbalConnection = $this->createStub(DbalConnection::class);
 
+        $isSameDatabaseChecker = static fn () => true;
         $connection->expects($this->once())
             ->method('configureSchema')
-            ->with($schema, $dbalConnection, static fn () => true);
+            ->with($schema, $dbalConnection, $isSameDatabaseChecker);
 
-        $transport->configureSchema($schema, $dbalConnection, static fn () => true);
+        $transport->configureSchema($schema, $dbalConnection, $isSameDatabaseChecker);
     }
 
     private function getTransport(?SerializerInterface $serializer = null, ?Connection $connection = null): DoctrineTransport
